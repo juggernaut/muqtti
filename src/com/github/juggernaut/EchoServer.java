@@ -51,7 +51,9 @@ public class EchoServer {
                                 System.out.print(data);
                             }
                             */
-                            socketChannel.write(buf);
+                            while (buf.hasRemaining()) {
+                                socketChannel.write(buf);
+                            }
                             buf.clear();
                             numberReadBytes = socketChannel.read(buf);
                         }
