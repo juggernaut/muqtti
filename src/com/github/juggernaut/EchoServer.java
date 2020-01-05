@@ -43,12 +43,15 @@ public class EchoServer {
                     final var buf = ByteBuffer.allocate(64);
                     try {
                         int numberReadBytes = socketChannel.read(buf);
-                        while (numberReadBytes != -1) {
+                        while (numberReadBytes > 0) {
                             buf.flip();
+                            /*
                             while(buf.hasRemaining()) {
                                 char data = (char) buf.get();
                                 System.out.print(data);
                             }
+                            */
+                            socketChannel.write(buf);
                             buf.clear();
                             numberReadBytes = socketChannel.read(buf);
                         }
