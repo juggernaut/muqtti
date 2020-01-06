@@ -24,8 +24,9 @@ public class MqttConnect extends MqttPacket {
     private final String clientId;
     private final String userName;
     private final byte[] password;
+    private final QoS willQos;
 
-    public MqttConnect(int flags, int keepAlive, byte connectFlags, ConnectProperties connectProperties, String clientId, String userName, byte[] password) {
+    public MqttConnect(int flags, int keepAlive, byte connectFlags, ConnectProperties connectProperties, String clientId, String userName, byte[] password, QoS willQos) {
         super(PacketType.CONNECT, flags);
         this.keepAlive = keepAlive;
         this.connectFlags = connectFlags;
@@ -33,6 +34,7 @@ public class MqttConnect extends MqttPacket {
         this.clientId = Objects.requireNonNull(clientId);
         this.userName = userName;
         this.password = password;
+        this.willQos = willQos;
     }
 
     public static MqttConnect fromBuffer(final int flags, final ByteBuffer buffer) {
@@ -41,6 +43,7 @@ public class MqttConnect extends MqttPacket {
         validateProtocolName(buffer);
         validateProtocolVersion(buffer);
         final byte connectFlags = decodeConnectFlags(buffer);
+        final QoS willQoS = decodeWillQoS(connectFlags);
         final int keepAlive = decodeKeepAlive(buffer);
         final int propertyLength = decodePropertyLength(buffer);
         if (propertyLength > buffer.remaining()) {
@@ -70,7 +73,7 @@ public class MqttConnect extends MqttPacket {
         if (buffer.hasRemaining()) {
             throw new IllegalArgumentException("Extraneous length in buffer for CONNECT packet");
         }
-        return new MqttConnect(flags, keepAlive, connectFlags, connectProperties, clientId, userName, password);
+        return new MqttConnect(flags, keepAlive, connectFlags, connectProperties, clientId, userName, password, willQoS);
     }
 
     private static byte[] decodePassword(ByteBuffer buffer, byte connectFlags) {
@@ -111,6 +114,18 @@ public class MqttConnect extends MqttPacket {
             throw new IllegalArgumentException("Reserved flag in the CONNECT packet must be set to 0");
         }
         return connectFlags;
+    }
+
+    private static QoS decodeWillQoS(final byte connectFlags) {
+        int willQos = (connectFlags >> WILL_QOS) & 0x03;
+        if (willQos > 2) {
+            throw new IllegalArgumentException("Will QoS must be 0, 1 or 2");
+        }
+        // If the Will Flag is set to 0, then the Will QoS MUST be set to 0 (0x00) [MQTT-3.1.2-11]
+        if (!hasWillFlag(connectFlags) && willQos != 0) {
+            throw new IllegalArgumentException("Will QoS must be 0 if the Will Flag is not set");
+        }
+        return QoS.fromIntValue(willQos);
     }
 
     private static int decodeKeepAlive(ByteBuffer buffer) {
@@ -192,5 +207,9 @@ public class MqttConnect extends MqttPacket {
 
     public boolean hasWillRetain() {
         return hasWillRetain(connectFlags);
+    }
+
+    public QoS getWillQoS() {
+        return willQos;
     }
 }

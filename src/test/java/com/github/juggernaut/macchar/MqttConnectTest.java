@@ -5,6 +5,7 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.github.juggernaut.macchar.QoS.AT_MOST_ONCE;
 import static org.junit.Assert.*;
 
 /**
@@ -49,6 +50,7 @@ public class MqttConnectTest {
         assertNotNull(decodedPacket);
         assertEquals(MqttPacket.PacketType.CONNECT, decodedPacket.getPacketType());
         final MqttConnect connectPkt = (MqttConnect) decodedPacket;
+        assertEquals(AT_MOST_ONCE, connectPkt.getWillQoS());
         assertTrue(connectPkt.getConnectProperties().isPresent());
         final int receiveMax = connectPkt.getConnectProperties().map(ConnectProperties::getReceiveMaximum).orElse(-1);
         assertEquals(20, receiveMax);
