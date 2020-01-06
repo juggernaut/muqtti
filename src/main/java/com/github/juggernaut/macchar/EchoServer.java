@@ -1,4 +1,4 @@
-package com.github.juggernaut;
+package com.github.juggernaut.macchar;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

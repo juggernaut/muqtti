@@ -1,4 +1,4 @@
-package com.github.juggernaut;
+package com.github.juggernaut.macchar;
 
 public class Main {
 

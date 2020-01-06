@@ -1,11 +1,11 @@
-package com.github.juggernaut;
+package com.github.juggernaut.macchar;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.github.juggernaut.PropertyIdentifiers.*;
+import static com.github.juggernaut.macchar.PropertyIdentifiers.*;
 
 /**
  * @author ameya

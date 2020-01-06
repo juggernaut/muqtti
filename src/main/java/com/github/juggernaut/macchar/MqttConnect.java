@@ -1,4 +1,4 @@
-package com.github.juggernaut;
+package com.github.juggernaut.macchar;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -9,7 +9,7 @@ import java.util.UUID;
 /**
  * @author ameya
  */
-public class MqttConnect {
+public class MqttConnect extends MqttPacket {
 
     private static int CLEAN_START = 1;
     private static int WILL_FLAG = 2;
@@ -25,7 +25,8 @@ public class MqttConnect {
     private final String userName;
     private final byte[] password;
 
-    public MqttConnect(int keepAlive, byte connectFlags, ConnectProperties connectProperties, String clientId, String userName, byte[] password) {
+    public MqttConnect(int flags, int keepAlive, byte connectFlags, ConnectProperties connectProperties, String clientId, String userName, byte[] password) {
+        super(PacketType.CONNECT, flags);
         this.keepAlive = keepAlive;
         this.connectFlags = connectFlags;
         this.connectProperties = connectProperties;
@@ -34,7 +35,7 @@ public class MqttConnect {
         this.password = password;
     }
 
-    public static MqttConnect fromBuffer(final ByteBuffer buffer) {
+    public static MqttConnect fromBuffer(final int flags, final ByteBuffer buffer) {
         // mqtt-v5.0 Section 3.1.2
         validateVariableHeaderLength(buffer);
         validateProtocolName(buffer);
@@ -69,7 +70,7 @@ public class MqttConnect {
         if (buffer.hasRemaining()) {
             throw new IllegalArgumentException("Extraneous length in buffer for CONNECT packet");
         }
-        return new MqttConnect(keepAlive, connectFlags, connectProperties, clientId, userName, password);
+        return new MqttConnect(flags, keepAlive, connectFlags, connectProperties, clientId, userName, password);
     }
 
     private static byte[] decodePassword(ByteBuffer buffer, byte connectFlags) {
@@ -141,6 +142,10 @@ public class MqttConnect {
         return null;
     }
 
+    private static boolean hasCleanStartFlag(final byte flags) {
+        return ((flags >> CLEAN_START) & 0x01) == 1;
+    }
+
     private static boolean hasWillFlag(final byte flags) {
         return ((flags >> WILL_FLAG) & 0x01) == 1;
     }
@@ -171,5 +176,21 @@ public class MqttConnect {
 
     public Optional<byte[]> getPassword() {
         return Optional.ofNullable(password);
+    }
+
+    public boolean hasCleanStartFlag() {
+        return hasCleanStartFlag(connectFlags);
+    }
+
+    public boolean hasWillFlag() {
+        return hasWillFlag(connectFlags);
+    }
+
+    private boolean hasWillRetain(final byte flags) {
+        return ((flags >> WILL_RETAIN) & 0x01) == 1;
+    }
+
+    public boolean hasWillRetain() {
+        return hasWillRetain(connectFlags);
     }
 }

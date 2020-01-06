@@ -1,7 +1,8 @@
-package com.github.juggernaut;
+package com.github.juggernaut.macchar;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * A class that decodes the incoming byte stream into MQTT packets
@@ -10,7 +11,8 @@ import java.util.Arrays;
  */
 public class MqttDecoder {
 
-    private ByteBuffer currentBuffer;
+    private ByteBuffer remainingPacketBuffer;
+    private int flags;
 
     private final VariableByteIntegerDecoder variableByteIntegerDecoder = new VariableByteIntegerDecoder();
 
@@ -22,35 +24,12 @@ public class MqttDecoder {
 
     private State state = State.INIT;
 
-    private PacketTypes packetType;
+    private MqttPacket.PacketType packetType;
 
-    enum PacketTypes {
-        CONNECT(1),
-        CONNACK(2),
-        PUBLISH(3),
-        PUBACK(4),
-        PUBREC(5),
-        PUBREL(6),
-        PUBCOMP(7),
-        SUBSCRIBE(8),
-        SUBACK(9),
-        UNSUBSCRIBE(10),
-        UNSUBACK(11),
-        PINGREQ(12),
-        PINGRESP(13),
-        DISCONNECT(14),
-        AUTH(15);
+    private final Consumer<MqttPacket> packetConsumer;
 
-        private final int intValue;
-
-        PacketTypes(int value) {
-            this.intValue = value;
-        }
-
-        static PacketTypes fromInt(int input) {
-            return Arrays.stream(values()).filter(v -> v.intValue == input).findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid value " + input + " for packet type"));
-        }
+    public MqttDecoder(Consumer<MqttPacket> packetConsumer) {
+        this.packetConsumer = Objects.requireNonNull(packetConsumer);
     }
 
     public void onRead(final ByteBuffer incoming) {
@@ -66,7 +45,7 @@ public class MqttDecoder {
                     final int remainingLength = variableByteIntegerDecoder.getValue();
                     variableByteIntegerDecoder.reset();
                     if (remainingLength > 0) {
-                        currentBuffer = ByteBuffer.allocate(remainingLength);
+                        remainingPacketBuffer = ByteBuffer.allocate(remainingLength);
                         state = State.READING_REMAINING_PACKET;
                     } else {
                         // TODO: check if remaining length of 0 is valid for this packet type
@@ -75,7 +54,7 @@ public class MqttDecoder {
                 }
                 break;
             case READING_REMAINING_PACKET:
-                final boolean atCapacity = ByteBufferUtil.copyToCapacity(incoming, currentBuffer);
+                final boolean atCapacity = ByteBufferUtil.copyToCapacity(incoming, remainingPacketBuffer);
                 if (atCapacity) {
                     decodeRemainingPacket();
                     state = State.INIT;
@@ -93,19 +72,20 @@ public class MqttDecoder {
 
     private void readPacketTypeAndFlags(final ByteBuffer buf) {
         byte packetTypeAndFlags = buf.get();
-        int packetTypeRaw = packetTypeAndFlags & 0xf0;
-        packetType = PacketTypes.fromInt(packetTypeRaw);
-
-        int flags = packetTypeAndFlags & 0x0f;
+        int packetTypeRaw = (packetTypeAndFlags >> 4) & 0x0f;
+        packetType = MqttPacket.PacketType.fromInt(packetTypeRaw);
+        flags = packetTypeAndFlags & 0x0f;
     }
 
     private void decodeRemainingPacket() {
-
+        switch (packetType) {
+            case CONNECT:
+                remainingPacketBuffer.flip();
+                final MqttPacket connectPkt = MqttConnect.fromBuffer(flags, remainingPacketBuffer);
+                packetConsumer.accept(connectPkt);
+                break;
+            default:
+                throw new IllegalArgumentException("Only CONNECT parsing has been implemented");
+        }
     }
-
-    private void parseConnect(final ByteBuffer buf, int flags) {
-
-
-    }
-
 }
