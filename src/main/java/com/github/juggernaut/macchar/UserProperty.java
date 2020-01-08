@@ -24,8 +24,8 @@ public class UserProperty {
     }
 
     public static UserProperty fromBuffer(final ByteBuffer buffer) {
-        final String name = ByteBufferUtil.getUTF8String(buffer);
-        final String value = ByteBufferUtil.getUTF8String(buffer);
+        final String name = ByteBufferUtil.decodeUTF8String(buffer);
+        final String value = ByteBufferUtil.decodeUTF8String(buffer);
         return new UserProperty(name, value);
     }
 }

@@ -1,5 +1,8 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.events.PacketReceivedEvent;
+
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
@@ -40,5 +43,17 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
     @Override
     public void accept(MqttPacket mqttPacket) {
         System.out.println("Successfully decoded packet of type " + mqttPacket.getPacketType());
+        mqttChannelActor.sendMessage(new PacketReceivedEvent(mqttPacket));
+    }
+
+    public void sendPacket(MqttPacket packet) {
+        final ByteBuffer encoded = packet.encode();
+        encoded.flip();
+        try {
+            // TODO: handle partial writes here
+            socketChannel.write(encoded);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

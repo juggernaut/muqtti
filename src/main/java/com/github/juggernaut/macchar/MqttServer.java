@@ -15,7 +15,7 @@ import java.util.function.Function;
  */
 public class MqttServer {
 
-    private static final int PORT = 2883;
+    private static final int PORT = 1883;
 
     private final Function<SocketChannel, ChannelListener> channelListenerFactory;
 

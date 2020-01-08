@@ -54,7 +54,7 @@ public class MqttConnectTest {
         assertTrue(connectPkt.getConnectProperties().isPresent());
         final int receiveMax = connectPkt.getConnectProperties().map(ConnectProperties::getReceiveMaximum).orElse(-1);
         assertEquals(20, receiveMax);
-        assertNotNull(connectPkt.getClientId());
+        assertTrue(connectPkt.getClientId().isEmpty());
         assertEquals(60, connectPkt.getKeepAlive());
         assertTrue(connectPkt.hasCleanStartFlag());
         assertFalse(connectPkt.hasWillFlag());

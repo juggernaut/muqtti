@@ -1,5 +1,6 @@
 package com.github.juggernaut.macchar;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
@@ -50,5 +51,12 @@ public abstract class MqttPacket {
 
     public int getFlags() {
         return flags;
+    }
+
+    public abstract ByteBuffer encode();
+
+    protected void encodeFixedHeader(final ByteBuffer buffer) {
+        byte headerByte = (byte) ((packetType.intValue << 4) | flags);
+        buffer.put(headerByte);
     }
 }

@@ -58,14 +58,14 @@ public class ConnectProperties {
                     if (sessionExpiryInterval != -1) {
                         throw new IllegalArgumentException("Session exprity cannot be specified more than once");
                     }
-                    sessionExpiryInterval = ByteBufferUtil.getFourByteLength(buffer);
+                    sessionExpiryInterval = ByteBufferUtil.decodeFourByteLength(buffer);
                     break;
                 case RECEIVE_MAXIMUM:
                     // 3.1.2.11.3: It is a Protocol Error to include the Receive Maximum value more than once or for it to have the value 0
                     if (receiveMaximum != -1) {
                         throw new IllegalArgumentException("REceive Maximum property canot be specified more than once");
                     }
-                    receiveMaximum = ByteBufferUtil.getTwoByteLength(buffer);
+                    receiveMaximum = ByteBufferUtil.decodeTwoByteLength(buffer);
                     if (receiveMaximum == 0) {
                         throw new IllegalArgumentException("Receive Maximum proprety cannot be 0");
                     }
@@ -75,7 +75,7 @@ public class ConnectProperties {
                     if (maximumPacketSize != -1) {
                         throw new IllegalArgumentException("Maximum packet size cannot be specified more than once");
                     }
-                    maximumPacketSize = ByteBufferUtil.getFourByteLength(buffer);
+                    maximumPacketSize = ByteBufferUtil.decodeFourByteLength(buffer);
                     if (maximumPacketSize == 0) {
                         throw new IllegalArgumentException("Maximum packet size cannot be 0");
                     }
@@ -85,7 +85,7 @@ public class ConnectProperties {
                     if (topicAliasMaximum != -1) {
                         throw new IllegalArgumentException("Topic alias maximum cannot be specified more than once");
                     }
-                    topicAliasMaximum = ByteBufferUtil.getTwoByteLength(buffer);
+                    topicAliasMaximum = ByteBufferUtil.decodeTwoByteLength(buffer);
                     break;
                 case REQUEST_RESPONSE_INFORMATION:
                     // 3.1.2.11.6: It is Protocol Error to include the Request Response Information more than once, or to have a value other than 0 or 1
@@ -117,13 +117,13 @@ public class ConnectProperties {
                     if (authenticationMethod != null) {
                         throw new IllegalArgumentException("Authentication method cannot be speicified more than once");
                     }
-                    authenticationMethod = ByteBufferUtil.getUTF8String(buffer);
+                    authenticationMethod = ByteBufferUtil.decodeUTF8String(buffer);
                     break;
                 case AUTHENTICATION_DATA:
                     if (authenticationData != null) {
                         throw new IllegalArgumentException("authenication data cannot be sepcifid more than once");
                     }
-                    authenticationData = ByteBufferUtil.getBinaryData(buffer);
+                    authenticationData = ByteBufferUtil.decodeBinaryData(buffer);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown property for CONNECT packet");

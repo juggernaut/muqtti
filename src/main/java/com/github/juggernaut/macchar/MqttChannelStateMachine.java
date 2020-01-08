@@ -4,6 +4,7 @@ import com.github.juggernaut.macchar.events.PacketReceivedEvent;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -71,6 +72,7 @@ public class MqttChannelStateMachine implements StateMachine {
     @Override
     public void init() {
         currentState = INIT;
+        System.out.println("MQTT state machine initialized");
     }
 
     @Override
@@ -99,7 +101,15 @@ public class MqttChannelStateMachine implements StateMachine {
 
     private void sendConnAck(final PacketReceivedEvent event) {
         assert isConnect(event);
-        // TODO: send conn ack via channel
+        final String clientId = ((MqttConnect) event.getPacket()).getClientId();
+        String assignedClientId = null;
+        if (clientId.isEmpty()) {
+            // A Server MAY allow a Client to supply a ClientID that has a length of zero bytes, however if it does so the Server MUST treat this as a special case and assign a unique ClientID to that Client [MQTT-3.1.3-6]
+            assignedClientId = "auto-" + UUID.randomUUID().toString();
+        }
+        // we don't have sessions yet, so alwasy send false
+        final var connAck = new MqttConnAck(MqttConnAck.ConnectReasonCode.SUCCESS, false, Optional.ofNullable(assignedClientId));
+        mqttChannel.sendPacket(connAck);
         System.out.println("Sent CONNACK");
     }
 

@@ -78,13 +78,13 @@ public class MqttConnect extends MqttPacket {
 
     private static byte[] decodePassword(ByteBuffer buffer, byte connectFlags) {
         if (hasPasswordFlag(connectFlags)) {
-            return ByteBufferUtil.getBinaryData(buffer);
+            return ByteBufferUtil.decodeBinaryData(buffer);
         }
         return null;
     }
 
     private static void validateVariableHeaderLength(ByteBuffer buffer) {
-        int variableHeaderLength = ByteBufferUtil.getTwoByteLength(buffer);
+        int variableHeaderLength = ByteBufferUtil.decodeTwoByteLength(buffer);
         if (variableHeaderLength != 4) {
             throw new IllegalArgumentException("Variable header length of CONNECT packet must be 4!");
         }
@@ -129,7 +129,7 @@ public class MqttConnect extends MqttPacket {
     }
 
     private static int decodeKeepAlive(ByteBuffer buffer) {
-        return ByteBufferUtil.getTwoByteLength(buffer);
+        return ByteBufferUtil.decodeTwoByteLength(buffer);
     }
 
     private static int decodePropertyLength(ByteBuffer buffer) {
@@ -142,17 +142,13 @@ public class MqttConnect extends MqttPacket {
     }
 
     private static String decodeClientId(final ByteBuffer buffer) {
-        var clientId = ByteBufferUtil.getUTF8String(buffer);
-        if (clientId.isEmpty()) {
-            // A Server MAY allow a Client to supply a ClientID that has a length of zero bytes, however if it does so the Server MUST treat this as a special case and assign a unique ClientID to that Client [MQTT-3.1.3-6]
-            clientId = UUID.randomUUID().toString();
-        }
+        var clientId = ByteBufferUtil.decodeUTF8String(buffer);
         return clientId;
     }
 
     private static String decodeUsername(final ByteBuffer buffer, final byte connectFlags) {
         if (hasUsernameFlag(connectFlags)) {
-            return ByteBufferUtil.getUTF8String(buffer);
+            return ByteBufferUtil.decodeUTF8String(buffer);
         }
         return null;
     }
@@ -211,5 +207,10 @@ public class MqttConnect extends MqttPacket {
 
     public QoS getWillQoS() {
         return willQos;
+    }
+
+    @Override
+    public ByteBuffer encode() {
+        throw new IllegalArgumentException("not yet implemented");
     }
 }

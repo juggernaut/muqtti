@@ -6,6 +6,7 @@ package com.github.juggernaut.macchar;
 public class PropertyIdentifiers {
 
     public static final int SESSION_EXPIRY_INTERVAL = 0x11;
+    public static final int ASSIGNED_CLIENT_IDENTIFIER = 0x12;
     public static final int RECEIVE_MAXIMUM = 0x21;
     public static final int MAXIMUM_PACKET_SIZE = 0x27;
     public static final int TOPIC_ALIAS_MAXIMUM = 0x22;
