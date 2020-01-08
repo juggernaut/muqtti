@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.github.juggernaut.macchar.PropertyIdentifiers.*;
+import static com.github.juggernaut.macchar.property.PropertyIdentifiers.*;
 
 /**
  * @author ameya

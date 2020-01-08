@@ -88,6 +88,7 @@ public class MqttChannelStateMachine implements StateMachine {
                 currentState = t.toState;
             } catch (Exception e) {
                 System.out.println("Unhandled exception during state machine action for event " + event.getClass());
+                e.printStackTrace();
             }
         }, () -> {
             System.out.println("Event " + event.getClass() + " not applicable at state " + currentState);

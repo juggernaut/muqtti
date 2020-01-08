@@ -1,9 +1,15 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.property.AssignedClientIdentifier;
+import com.github.juggernaut.macchar.property.MqttProperty;
+import com.github.juggernaut.macchar.property.UTF8Property;
+
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
-import static com.github.juggernaut.macchar.PropertyIdentifiers.ASSIGNED_CLIENT_IDENTIFIER;
+import static com.github.juggernaut.macchar.property.PropertyIdentifiers.ASSIGNED_CLIENT_IDENTIFIER;
 
 /**
  * @author ameya
@@ -28,6 +34,7 @@ public class MqttConnAck extends MqttPacket {
     private final ConnectReasonCode connectReasonCode;
     private final boolean sessionPresent;
     private final Optional<String> assignedClientId;
+    private final List<MqttProperty> properties = new ArrayList<>();
 
 
     protected MqttConnAck(ConnectReasonCode connectReasonCode, boolean sessionPresent, Optional<String> assignedClientId) {
@@ -35,8 +42,14 @@ public class MqttConnAck extends MqttPacket {
         this.connectReasonCode = connectReasonCode;
         this.sessionPresent = sessionPresent;
         this.assignedClientId = assignedClientId;
+        populateProperties();
     }
 
+    private void populateProperties() {
+        assignedClientId.map(AssignedClientIdentifier::new).ifPresent(properties::add);
+    }
+
+    /*
     @Override
     public ByteBuffer encode() {
         // max length is
@@ -56,6 +69,27 @@ public class MqttConnAck extends MqttPacket {
         ByteBufferUtil.encodeVariableByteInteger(buffer, propertyLength);
         encodeAssignedClientId(buffer);
         return buffer;
+    }
+     */
+
+    public void encodeVariableHeader(final ByteBuffer buffer) {
+        encodeConnAckFlags(buffer);
+        encodeConnReasonCode(buffer);
+        final int propertyLength = getEncodedPropertiesLength(properties);
+        ByteBufferUtil.encodeVariableByteInteger(buffer, propertyLength);
+        encodeProperties(buffer, properties);
+    }
+
+    @Override
+    protected int getEncodedVariableHeaderLength() {
+        final int propertyLength = getEncodedPropertiesLength(properties);
+        // 1 byte conn ack flags + 1 byte connect reason code + variable byte property length + property length
+        return 1 + 1 + ByteBufferUtil.getEncodedVariableByteIntegerLength(propertyLength) + propertyLength;
+    }
+
+    @Override
+    protected int getEncodedPayloadLength() {
+        return 0;
     }
 
     private void encodeConnAckFlags(ByteBuffer buffer) {

@@ -210,7 +210,17 @@ public class MqttConnect extends MqttPacket {
     }
 
     @Override
-    public ByteBuffer encode() {
-        throw new IllegalArgumentException("not yet implemented");
+    protected int getEncodedVariableHeaderLength() {
+        throw new IllegalArgumentException("not implemented");
+    }
+
+    @Override
+    protected int getEncodedPayloadLength() {
+        throw new IllegalArgumentException("not implemented");
+    }
+
+    @Override
+    protected void encodeVariableHeader(ByteBuffer buffer) {
+        throw new IllegalArgumentException("not implemented");
     }
 }

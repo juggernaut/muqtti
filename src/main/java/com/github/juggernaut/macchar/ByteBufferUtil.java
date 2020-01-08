@@ -70,6 +70,22 @@ public class ByteBufferUtil {
         return binaryData;
     }
 
+    public static int getEncodedVariableByteIntegerLength(final int i) {
+        assert i >= 0 && i < 268435455;
+        // From table 1-1 in spec
+        if (i < 128) {
+            return 1;
+        }
+        if (i < 16384) {
+            return 2;
+        }
+        if (i < 2097152) {
+            return 3;
+        }
+        return 4;
+    }
+
+
     public static void encodeVariableByteInteger(final ByteBuffer buffer, final int i) {
         assert i >= 0 && i < 268435455;
         // Algorithm taken from MQTT-v5.0 Section 1.5.5

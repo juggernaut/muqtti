@@ -1,7 +1,10 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.property.MqttProperty;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author ameya
@@ -53,10 +56,35 @@ public abstract class MqttPacket {
         return flags;
     }
 
-    public abstract ByteBuffer encode();
+    protected abstract int getEncodedVariableHeaderLength();
+    protected abstract int getEncodedPayloadLength();
+    protected abstract void encodeVariableHeader(ByteBuffer buffer);
 
-    protected void encodeFixedHeader(final ByteBuffer buffer) {
+    public ByteBuffer encode() {
+        final int remainingLength = getEncodedVariableHeaderLength() + getEncodedPayloadLength();
+        final int packetSize = 1 + ByteBufferUtil.getEncodedVariableByteIntegerLength(remainingLength) + remainingLength;
+        final var buffer = ByteBuffer.allocate(packetSize);
+        encodeFixedHeader(buffer);
+        encodeRemainingLength(buffer, remainingLength);
+        encodeVariableHeader(buffer);
+        // TODO: encode payload
+        return buffer;
+    }
+
+    private void encodeFixedHeader(final ByteBuffer buffer) {
         byte headerByte = (byte) ((packetType.intValue << 4) | flags);
         buffer.put(headerByte);
+    }
+
+    private static void encodeRemainingLength(final ByteBuffer buffer, final int length) {
+        ByteBufferUtil.encodeVariableByteInteger(buffer, length);
+    }
+
+    protected int getEncodedPropertiesLength(final List<MqttProperty> properties) {
+        return properties.stream().mapToInt(MqttProperty::getEncodedLength).sum();
+    }
+
+    protected void encodeProperties(final ByteBuffer buffer, final List<MqttProperty> properties) {
+        properties.forEach(p -> p.encode(buffer));
     }
 }
