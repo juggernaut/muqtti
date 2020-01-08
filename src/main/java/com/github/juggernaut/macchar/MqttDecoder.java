@@ -26,9 +26,15 @@ public class MqttDecoder {
 
     private MqttPacket.PacketType packetType;
 
-    private final Consumer<MqttPacket> packetConsumer;
+    private Consumer<MqttPacket> packetConsumer;
 
     public MqttDecoder(Consumer<MqttPacket> packetConsumer) {
+        this.packetConsumer = Objects.requireNonNull(packetConsumer);
+    }
+
+    public MqttDecoder() {}
+
+    public void setPacketConsumer(final Consumer<MqttPacket> packetConsumer) {
         this.packetConsumer = Objects.requireNonNull(packetConsumer);
     }
 
@@ -82,7 +88,9 @@ public class MqttDecoder {
             case CONNECT:
                 remainingPacketBuffer.flip();
                 final MqttPacket connectPkt = MqttConnect.fromBuffer(flags, remainingPacketBuffer);
-                packetConsumer.accept(connectPkt);
+                if (packetConsumer != null) {
+                    packetConsumer.accept(connectPkt);
+                }
                 break;
             default:
                 throw new IllegalArgumentException("Only CONNECT parsing has been implemented");

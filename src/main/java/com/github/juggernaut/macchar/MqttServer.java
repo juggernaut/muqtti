@@ -7,13 +7,24 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * @author ameya
  */
-public class EchoServer {
+public class MqttServer {
 
-    private static final int PORT = 6010;
+    private static final int PORT = 2883;
+
+    private final Function<SocketChannel, ChannelListener> channelListenerFactory;
+
+    // TODO: figure out optimal size of buffer
+    private final ByteBuffer readBuffer = ByteBuffer.allocate(64 * 1024);
+
+    public MqttServer(Function<SocketChannel, ChannelListener> channelListenerFactory) {
+        this.channelListenerFactory = Objects.requireNonNull(channelListenerFactory);
+    }
 
     public void start() throws IOException {
         final var serverSocketChannel = ServerSocketChannel.open();
@@ -33,35 +44,36 @@ public class EchoServer {
                         if (newSocket != null) { // don't think this will ever happen, but defensive programming
                             System.out.println("Accepted new connection from " + newSocket.getRemoteAddress());
                             newSocket.configureBlocking(false);
-                            newSocket.register(selector, SelectionKey.OP_READ);
+                            final var newChannelKey = newSocket.register(selector, SelectionKey.OP_READ);
+                            final var channelListener = channelListenerFactory.apply(newSocket);
+                            newChannelKey.attach(channelListener);
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 } else if (selectedKey.isReadable()) {
                     final var socketChannel = (SocketChannel) selectedKey.channel();
-                    final var buf = ByteBuffer.allocate(64);
                     try {
-                        int numberReadBytes = socketChannel.read(buf);
+                        int numberReadBytes = socketChannel.read(readBuffer);
                         while (numberReadBytes > 0) {
-                            buf.flip();
+                            readBuffer.flip();
                             /*
-                            while(buf.hasRemaining()) {
-                                char data = (char) buf.get();
-                                System.out.print(data);
+                            while (readBuffer.hasRemaining()) {
+                                socketChannel.write(readBuffer);
                             }
                             */
-                            while (buf.hasRemaining()) {
-                                socketChannel.write(buf);
+                            final var channelListener = (ChannelListener) selectedKey.attachment();
+                            // It is expected that all of the buffer is read by the listener
+                            channelListener.onRead(readBuffer);
+                            if (readBuffer.hasRemaining()) {
+                                System.err.println("ERROR: remaining bytes in read buffer, this a serious programming error");
                             }
-                            buf.clear();
-                            numberReadBytes = socketChannel.read(buf);
+                            readBuffer.clear();
+                            numberReadBytes = socketChannel.read(readBuffer);
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-
-
                 }
 
             }, 50);
