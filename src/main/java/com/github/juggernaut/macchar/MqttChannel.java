@@ -12,15 +12,17 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
 
     private final SocketChannel socketChannel;
     private final MqttDecoder mqttDecoder;
+    private final Actor mqttChannelActor;
 
-    protected MqttChannel(SocketChannel socketChannel, MqttDecoder mqttDecoder) {
+    protected MqttChannel(SocketChannel socketChannel, MqttDecoder mqttDecoder, Actor mqttChannelActor) {
         this.socketChannel = Objects.requireNonNull(socketChannel);
         this.mqttDecoder = Objects.requireNonNull(mqttDecoder);
+        this.mqttChannelActor = Objects.requireNonNull(mqttChannelActor);
     }
 
-    public static MqttChannel create(final SocketChannel socketChannel) {
+    public static MqttChannel create(final SocketChannel socketChannel, final Actor mqttChannelActor) {
         final var mqttDecoder = new MqttDecoder();
-        final var mqttChannel = new MqttChannel(socketChannel, mqttDecoder);
+        final var mqttChannel = new MqttChannel(socketChannel, mqttDecoder, mqttChannelActor);
         mqttDecoder.setPacketConsumer(mqttChannel);
         return mqttChannel;
     }

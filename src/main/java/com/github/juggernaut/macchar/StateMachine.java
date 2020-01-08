@@ -6,6 +6,12 @@ package com.github.juggernaut.macchar;
 public interface StateMachine {
 
     void init();
-    void onEvent(Event event);
+
+    /**
+     * Returns whether the event was handled (and action applied) or not
+     * @param event
+     * @return
+     */
+    boolean onEvent(Event event);
     void shutDown();
 }

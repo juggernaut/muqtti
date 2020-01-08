@@ -16,7 +16,7 @@ import static com.github.juggernaut.macchar.MqttChannelStateMachine.Transition.t
  */
 public class MqttChannelStateMachine implements StateMachine {
 
-    private final MqttChannel mqttChannel;
+    private MqttChannel mqttChannel;
 
     enum State {
         INIT,
@@ -52,7 +52,7 @@ public class MqttChannelStateMachine implements StateMachine {
         }
     }
 
-    private State currentState;
+    private volatile State currentState;
 
     private final List<Transition> transitions = List.of(
             transition(INIT, CONNECTION_ESTABLISHED, PacketReceivedEvent.class, this::isConnect, this::sendConnAck)
@@ -62,21 +62,35 @@ public class MqttChannelStateMachine implements StateMachine {
         this.mqttChannel = mqttChannel;
     }
 
+    public MqttChannelStateMachine() {}
+
+    public void setMqttChannel(final MqttChannel mqttChannel) {
+        this.mqttChannel = mqttChannel;
+    }
+
     @Override
     public void init() {
         currentState = INIT;
     }
 
     @Override
-    public void onEvent(Event event) {
+    public boolean onEvent(Event event) {
         final Optional<Transition> applicableTransition = transitions.stream()
                 .filter(t -> t.fromState == currentState)
                 .filter(t -> event.getClass().equals(t.eventClass)) // could be 'isAssignableFrom' here to be a little lenient..
                 .filter(t -> t.guard.test(t.cast(event)))
                 .findFirst();
-        applicableTransition.ifPresentOrElse(t -> t.action.accept(t.cast(event)), () -> {
+        applicableTransition.ifPresentOrElse(t -> {
+            try {
+                t.action.accept(t.cast(event));
+                currentState = t.toState;
+            } catch (Exception e) {
+                System.out.println("Unhandled exception during state machine action for event " + event.getClass());
+            }
+        }, () -> {
             System.out.println("Event " + event.getClass() + " not applicable at state " + currentState);
         });
+        return applicableTransition.isPresent();
     }
 
     private boolean isConnect(final PacketReceivedEvent event) {
