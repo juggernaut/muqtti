@@ -1,5 +1,8 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.packet.ConnectProperties;
+import com.github.juggernaut.macchar.packet.Connect;
+import com.github.juggernaut.macchar.packet.MqttPacket;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -11,7 +14,7 @@ import static org.junit.Assert.*;
 /**
  * @author ameya
  */
-public class MqttConnectTest {
+public class ConnectTest {
 
     private static ByteBuffer hexToByteBuf(final String hexStream) {
         assert hexStream.length() % 2 == 0;
@@ -49,7 +52,7 @@ public class MqttConnectTest {
         final MqttPacket decodedPacket = consumed.get();
         assertNotNull(decodedPacket);
         assertEquals(MqttPacket.PacketType.CONNECT, decodedPacket.getPacketType());
-        final MqttConnect connectPkt = (MqttConnect) decodedPacket;
+        final Connect connectPkt = (Connect) decodedPacket;
         assertEquals(AT_MOST_ONCE, connectPkt.getWillQoS());
         assertTrue(connectPkt.getConnectProperties().isPresent());
         final int receiveMax = connectPkt.getConnectProperties().map(ConnectProperties::getReceiveMaximum).orElse(-1);

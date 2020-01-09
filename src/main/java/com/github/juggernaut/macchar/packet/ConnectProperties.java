@@ -1,4 +1,8 @@
-package com.github.juggernaut.macchar;
+package com.github.juggernaut.macchar.packet;
+
+import com.github.juggernaut.macchar.ByteBufferUtil;
+import com.github.juggernaut.macchar.UserProperty;
+import com.github.juggernaut.macchar.VariableByteIntegerDecoder;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -58,14 +62,14 @@ public class ConnectProperties {
                     if (sessionExpiryInterval != -1) {
                         throw new IllegalArgumentException("Session exprity cannot be specified more than once");
                     }
-                    sessionExpiryInterval = ByteBufferUtil.decodeFourByteLength(buffer);
+                    sessionExpiryInterval = ByteBufferUtil.decodeFourByteInteger(buffer);
                     break;
                 case RECEIVE_MAXIMUM:
                     // 3.1.2.11.3: It is a Protocol Error to include the Receive Maximum value more than once or for it to have the value 0
                     if (receiveMaximum != -1) {
                         throw new IllegalArgumentException("REceive Maximum property canot be specified more than once");
                     }
-                    receiveMaximum = ByteBufferUtil.decodeTwoByteLength(buffer);
+                    receiveMaximum = ByteBufferUtil.decodeTwoByteInteger(buffer);
                     if (receiveMaximum == 0) {
                         throw new IllegalArgumentException("Receive Maximum proprety cannot be 0");
                     }
@@ -75,7 +79,7 @@ public class ConnectProperties {
                     if (maximumPacketSize != -1) {
                         throw new IllegalArgumentException("Maximum packet size cannot be specified more than once");
                     }
-                    maximumPacketSize = ByteBufferUtil.decodeFourByteLength(buffer);
+                    maximumPacketSize = ByteBufferUtil.decodeFourByteInteger(buffer);
                     if (maximumPacketSize == 0) {
                         throw new IllegalArgumentException("Maximum packet size cannot be 0");
                     }
@@ -85,7 +89,7 @@ public class ConnectProperties {
                     if (topicAliasMaximum != -1) {
                         throw new IllegalArgumentException("Topic alias maximum cannot be specified more than once");
                     }
-                    topicAliasMaximum = ByteBufferUtil.decodeTwoByteLength(buffer);
+                    topicAliasMaximum = ByteBufferUtil.decodeTwoByteInteger(buffer);
                     break;
                 case REQUEST_RESPONSE_INFORMATION:
                     // 3.1.2.11.6: It is Protocol Error to include the Request Response Information more than once, or to have a value other than 0 or 1

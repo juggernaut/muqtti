@@ -30,25 +30,25 @@ public class ByteBufferUtil {
         return dstFull;
     }
 
-    public static int decodeTwoByteLength(final ByteBuffer buf) {
+    public static int decodeTwoByteInteger(final ByteBuffer buf) {
         assert buf.remaining() >= 2;
         short s = buf.getShort();
         return Short.toUnsignedInt(s);
     }
 
-    public static void encodeTwoByteLength(final ByteBuffer buf, int length) {
+    public static void encodeTwoByteInteger(final ByteBuffer buf, int length) {
         assert length >= 0 && length <= 65535;
         buf.putShort((short) length);
     }
 
-    public static long decodeFourByteLength(final ByteBuffer buf) {
+    public static long decodeFourByteInteger(final ByteBuffer buf) {
         assert buf.remaining() >= 4;
         int i = buf.getInt();
         return Integer.toUnsignedLong(i);
     }
 
     public static String decodeUTF8String(final ByteBuffer buf) {
-        int strLen = decodeTwoByteLength(buf);
+        int strLen = decodeTwoByteInteger(buf);
         if (strLen == 0) {
             return ""; // this is f'ing crazy but the spec this is allowed
         }
@@ -59,7 +59,7 @@ public class ByteBufferUtil {
     }
 
     public static byte[] decodeBinaryData(final ByteBuffer buf) {
-        int binaryDataLen = decodeTwoByteLength(buf);
+        int binaryDataLen = decodeTwoByteInteger(buf);
         if (binaryDataLen == 0) {
             // This is allowed according to spec
             return new byte[0];
@@ -103,7 +103,7 @@ public class ByteBufferUtil {
 
     public static void encodeUTF8String(final ByteBuffer buffer, final String s) {
         final byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
-        encodeTwoByteLength(buffer, bytes.length);
+        encodeTwoByteInteger(buffer, bytes.length);
         buffer.put(bytes);
     }
 

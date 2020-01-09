@@ -1,6 +1,7 @@
 package com.github.juggernaut.macchar;
 
 import com.github.juggernaut.macchar.events.PacketReceivedEvent;
+import com.github.juggernaut.macchar.packet.MqttPacket;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

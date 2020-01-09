@@ -1,5 +1,8 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.packet.Connect;
+import com.github.juggernaut.macchar.packet.MqttPacket;
+
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -87,7 +90,7 @@ public class MqttDecoder {
         switch (packetType) {
             case CONNECT:
                 remainingPacketBuffer.flip();
-                final MqttPacket connectPkt = MqttConnect.fromBuffer(flags, remainingPacketBuffer);
+                final MqttPacket connectPkt = Connect.fromBuffer(flags, remainingPacketBuffer);
                 if (packetConsumer != null) {
                     packetConsumer.accept(connectPkt);
                 }

@@ -1,7 +1,7 @@
 package com.github.juggernaut.macchar.events;
 
 import com.github.juggernaut.macchar.Event;
-import com.github.juggernaut.macchar.MqttPacket;
+import com.github.juggernaut.macchar.packet.MqttPacket;
 
 /**
  * @author ameya

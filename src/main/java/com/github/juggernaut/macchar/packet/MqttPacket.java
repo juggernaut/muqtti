@@ -1,5 +1,6 @@
-package com.github.juggernaut.macchar;
+package com.github.juggernaut.macchar.packet;
 
+import com.github.juggernaut.macchar.ByteBufferUtil;
 import com.github.juggernaut.macchar.property.MqttProperty;
 
 import java.nio.ByteBuffer;
@@ -11,7 +12,7 @@ import java.util.List;
  */
 public abstract class MqttPacket {
 
-    enum PacketType {
+    public enum PacketType {
         CONNECT(1),
         CONNACK(2),
         PUBLISH(3),
@@ -34,7 +35,7 @@ public abstract class MqttPacket {
             this.intValue = value;
         }
 
-        static PacketType fromInt(int input) {
+        public static PacketType fromInt(int input) {
             return Arrays.stream(values()).filter(v -> v.intValue == input).findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Invalid value " + input + " for packet type"));
         }

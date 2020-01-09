@@ -1,15 +1,18 @@
-package com.github.juggernaut.macchar;
+package com.github.juggernaut.macchar.packet;
+
+import com.github.juggernaut.macchar.ByteBufferUtil;
+import com.github.juggernaut.macchar.QoS;
+import com.github.juggernaut.macchar.VariableByteIntegerDecoder;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * @author ameya
  */
-public class MqttConnect extends MqttPacket {
+public class Connect extends MqttPacket {
 
     private static int CLEAN_START = 1;
     private static int WILL_FLAG = 2;
@@ -26,7 +29,7 @@ public class MqttConnect extends MqttPacket {
     private final byte[] password;
     private final QoS willQos;
 
-    public MqttConnect(int flags, int keepAlive, byte connectFlags, ConnectProperties connectProperties, String clientId, String userName, byte[] password, QoS willQos) {
+    public Connect(int flags, int keepAlive, byte connectFlags, ConnectProperties connectProperties, String clientId, String userName, byte[] password, QoS willQos) {
         super(PacketType.CONNECT, flags);
         this.keepAlive = keepAlive;
         this.connectFlags = connectFlags;
@@ -37,9 +40,9 @@ public class MqttConnect extends MqttPacket {
         this.willQos = willQos;
     }
 
-    public static MqttConnect fromBuffer(final int flags, final ByteBuffer buffer) {
+    public static Connect fromBuffer(final int flags, final ByteBuffer buffer) {
         // mqtt-v5.0 Section 3.1.2
-        validateVariableHeaderLength(buffer);
+        validateProtocolLength(buffer);
         validateProtocolName(buffer);
         validateProtocolVersion(buffer);
         final byte connectFlags = decodeConnectFlags(buffer);
@@ -73,7 +76,7 @@ public class MqttConnect extends MqttPacket {
         if (buffer.hasRemaining()) {
             throw new IllegalArgumentException("Extraneous length in buffer for CONNECT packet");
         }
-        return new MqttConnect(flags, keepAlive, connectFlags, connectProperties, clientId, userName, password, willQoS);
+        return new Connect(flags, keepAlive, connectFlags, connectProperties, clientId, userName, password, willQoS);
     }
 
     private static byte[] decodePassword(ByteBuffer buffer, byte connectFlags) {
@@ -83,8 +86,8 @@ public class MqttConnect extends MqttPacket {
         return null;
     }
 
-    private static void validateVariableHeaderLength(ByteBuffer buffer) {
-        int variableHeaderLength = ByteBufferUtil.decodeTwoByteLength(buffer);
+    private static void validateProtocolLength(ByteBuffer buffer) {
+        int variableHeaderLength = ByteBufferUtil.decodeTwoByteInteger(buffer);
         if (variableHeaderLength != 4) {
             throw new IllegalArgumentException("Variable header length of CONNECT packet must be 4!");
         }
@@ -129,7 +132,7 @@ public class MqttConnect extends MqttPacket {
     }
 
     private static int decodeKeepAlive(ByteBuffer buffer) {
-        return ByteBufferUtil.decodeTwoByteLength(buffer);
+        return ByteBufferUtil.decodeTwoByteInteger(buffer);
     }
 
     private static int decodePropertyLength(ByteBuffer buffer) {

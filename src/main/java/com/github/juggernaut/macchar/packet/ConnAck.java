@@ -1,8 +1,9 @@
-package com.github.juggernaut.macchar;
+package com.github.juggernaut.macchar.packet;
 
+import com.github.juggernaut.macchar.ByteBufferUtil;
+import com.github.juggernaut.macchar.packet.MqttPacket;
 import com.github.juggernaut.macchar.property.AssignedClientIdentifier;
 import com.github.juggernaut.macchar.property.MqttProperty;
-import com.github.juggernaut.macchar.property.UTF8Property;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -14,9 +15,9 @@ import static com.github.juggernaut.macchar.property.PropertyIdentifiers.ASSIGNE
 /**
  * @author ameya
  */
-public class MqttConnAck extends MqttPacket {
+public class ConnAck extends MqttPacket {
 
-    enum ConnectReasonCode {
+    public enum ConnectReasonCode {
         SUCCESS(0x00),
         UNSPECIFIED_ERROR(0x80);
 
@@ -37,7 +38,7 @@ public class MqttConnAck extends MqttPacket {
     private final List<MqttProperty> properties = new ArrayList<>();
 
 
-    protected MqttConnAck(ConnectReasonCode connectReasonCode, boolean sessionPresent, Optional<String> assignedClientId) {
+    public ConnAck(ConnectReasonCode connectReasonCode, boolean sessionPresent, Optional<String> assignedClientId) {
         super(PacketType.CONNACK, 0); // flags is reserved = 0
         this.connectReasonCode = connectReasonCode;
         this.sessionPresent = sessionPresent;
@@ -48,29 +49,6 @@ public class MqttConnAck extends MqttPacket {
     private void populateProperties() {
         assignedClientId.map(AssignedClientIdentifier::new).ifPresent(properties::add);
     }
-
-    /*
-    @Override
-    public ByteBuffer encode() {
-        // max length is
-        // 2 byte fixed + 1 byte conn ack flags + 1 byte connect reason code + 1 byte property length +
-        // 5 byte session expiry interval + 3 byte receive maximum + 2 byte maximum QoS + 2 byte retain available +
-        // 5 byte max packet size + (1 + 36 + len('auto') = 4) clientId +  3 byte topic alias maximum +
-        // unsupported (Reason, user properties, wildcard, subscription ids, shared sub, ...)
-        // = 68, let's round to 70
-        final var buffer = ByteBuffer.allocate(70);
-        encodeFixedHeader(buffer);
-        final int clientIdLength = assignedClientId.map(id -> 1 + 2 + ByteBufferUtil.getUTF8StringLengthInBytes(id)).orElse(0);
-        final int propertyLength = clientIdLength;
-        int remainingLength = 1 + 1 + 1 + propertyLength;
-        ByteBufferUtil.encodeVariableByteInteger(buffer, remainingLength);
-        encodeConnAckFlags(buffer);
-        encodeConnReasonCode(buffer);
-        ByteBufferUtil.encodeVariableByteInteger(buffer, propertyLength);
-        encodeAssignedClientId(buffer);
-        return buffer;
-    }
-     */
 
     public void encodeVariableHeader(final ByteBuffer buffer) {
         encodeConnAckFlags(buffer);
