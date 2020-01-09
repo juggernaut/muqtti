@@ -70,6 +70,18 @@ public class ByteBufferUtil {
         return binaryData;
     }
 
+    public static void encodeBinaryData(final ByteBuffer buf, final byte[] value) {
+        assert value.length <= 65535;
+        encodeTwoByteInteger(buf, value.length);
+        if (value.length > 0) {
+            buf.put(value);
+        }
+    }
+
+    public static int getEncodedBinaryDataLength(final byte[] value) {
+        return 2 + value.length;
+    }
+
     public static int getEncodedVariableByteIntegerLength(final int i) {
         assert i >= 0 && i < 268435455;
         // From table 1-1 in spec
@@ -107,7 +119,15 @@ public class ByteBufferUtil {
         buffer.put(bytes);
     }
 
-    public static int getUTF8StringLengthInBytes(final String s) {
+    public static int getEncodedUTF8StringLenghInBytes(final String s) {
+        return 2 + getUTF8StringLengthInBytes(s);
+    }
+
+    private static int getUTF8StringLengthInBytes(final String s) {
         return s.getBytes(StandardCharsets.UTF_8).length;
+    }
+
+    public static void encodeFourByteInteger(ByteBuffer buffer, long value) {
+        buffer.putInt((int) value);
     }
 }

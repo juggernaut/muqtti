@@ -101,7 +101,7 @@ public class ConnectProperties {
                         throw new IllegalArgumentException("Requst response information can only be 0 or 1");
                     }
                     break;
-                case REQUEST_PROBLEM_INFOMRATION:
+                case REQUEST_PROBLEM_INFORMATION:
                     // 3.1.2.11.6: It is Protocol Error to include the Request Response Information more than once, or to have a value other than 0 or 1
                     if (requestProblemInformation != -1) {
                         throw new IllegalArgumentException("Requst problem information cannot be specified more than once");
