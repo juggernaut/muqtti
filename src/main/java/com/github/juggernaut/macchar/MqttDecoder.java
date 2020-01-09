@@ -3,6 +3,7 @@ package com.github.juggernaut.macchar;
 import com.github.juggernaut.macchar.packet.Connect;
 import com.github.juggernaut.macchar.packet.MqttPacket;
 import com.github.juggernaut.macchar.packet.Publish;
+import com.github.juggernaut.macchar.packet.Subscribe;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -96,6 +97,9 @@ public class MqttDecoder {
                 break;
             case PUBLISH:
                 packet = Publish.fromBuffer(flags, remainingPacketBuffer);
+                break;
+            case SUBSCRIBE:
+                packet = Subscribe.fromBuffer(flags, remainingPacketBuffer);
                 break;
             default:
                 throw new IllegalArgumentException("Decoding packet type " + packetType + " is not yet implemented");

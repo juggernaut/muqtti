@@ -30,4 +30,12 @@ public class TestUtils {
             throw new IllegalArgumentException("Illegal hex character " + c);
         }
     }
+
+    public static ByteBuffer intArrayToByteBuf(final int[] data) {
+        final var buffer = ByteBuffer.allocate(data.length);
+        for (int i = 0 ; i < data.length; i++) {
+            buffer.put((byte) data[i]);
+        }
+        return buffer.flip();
+    }
 }
