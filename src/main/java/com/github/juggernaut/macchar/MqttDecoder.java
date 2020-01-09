@@ -2,6 +2,7 @@ package com.github.juggernaut.macchar;
 
 import com.github.juggernaut.macchar.packet.Connect;
 import com.github.juggernaut.macchar.packet.MqttPacket;
+import com.github.juggernaut.macchar.packet.Publish;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -87,16 +88,23 @@ public class MqttDecoder {
     }
 
     private void decodeRemainingPacket() {
+        remainingPacketBuffer.flip();
+        MqttPacket packet = null;
         switch (packetType) {
             case CONNECT:
-                remainingPacketBuffer.flip();
-                final MqttPacket connectPkt = Connect.fromBuffer(flags, remainingPacketBuffer);
-                if (packetConsumer != null) {
-                    packetConsumer.accept(connectPkt);
-                }
+                packet = Connect.fromBuffer(flags, remainingPacketBuffer);
+                break;
+            case PUBLISH:
+                packet = Publish.fromBuffer(flags, remainingPacketBuffer);
                 break;
             default:
-                throw new IllegalArgumentException("Only CONNECT parsing has been implemented");
+                throw new IllegalArgumentException("Decoding packet type " + packetType + " is not yet implemented");
+        }
+        if (remainingPacketBuffer.hasRemaining()) {
+            throw new IllegalArgumentException("Extraneous length in buffer after decoding packet; this may be a corrupt stream");
+        }
+        if (packetConsumer != null) {
+            packetConsumer.accept(packet);
         }
     }
 }

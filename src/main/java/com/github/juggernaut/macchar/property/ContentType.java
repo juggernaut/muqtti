@@ -15,7 +15,7 @@ public class ContentType extends UTF8Property {
         super(CONTENT_TYPE, value);
     }
 
-    public ContentType fromBuffer(ByteBuffer buffer) {
+    public static ContentType fromBuffer(ByteBuffer buffer) {
         return new ContentType(decodeValue(buffer));
     }
 }
