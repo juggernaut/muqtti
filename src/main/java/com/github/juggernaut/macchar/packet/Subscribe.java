@@ -129,4 +129,9 @@ public class Subscribe extends MqttPacket {
     public List<TopicFilter> getTopicFilters() {
         return topicFilters;
     }
+
+    @Override
+    protected void encodePayload(ByteBuffer buffer) {
+        throw new UnsupportedOperationException("not implemented");
+    }
 }

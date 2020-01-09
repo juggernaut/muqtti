@@ -60,6 +60,7 @@ public abstract class MqttPacket {
     protected abstract int getEncodedVariableHeaderLength();
     protected abstract int getEncodedPayloadLength();
     protected abstract void encodeVariableHeader(ByteBuffer buffer);
+    protected abstract void encodePayload(ByteBuffer buffer);
 
     public ByteBuffer encode() {
         final int remainingLength = getEncodedVariableHeaderLength() + getEncodedPayloadLength();
@@ -68,7 +69,7 @@ public abstract class MqttPacket {
         encodeFixedHeader(buffer);
         encodeRemainingLength(buffer, remainingLength);
         encodeVariableHeader(buffer);
-        // TODO: encode payload
+        encodePayload(buffer);
         return buffer;
     }
 

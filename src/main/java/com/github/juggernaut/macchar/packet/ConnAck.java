@@ -1,7 +1,6 @@
 package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.ByteBufferUtil;
-import com.github.juggernaut.macchar.packet.MqttPacket;
 import com.github.juggernaut.macchar.property.AssignedClientIdentifier;
 import com.github.juggernaut.macchar.property.MqttProperty;
 
@@ -91,4 +90,8 @@ public class ConnAck extends MqttPacket {
         });
     }
 
+    @Override
+    protected void encodePayload(ByteBuffer buffer) {
+        // Nothing to do here, payload is empty
+    }
 }

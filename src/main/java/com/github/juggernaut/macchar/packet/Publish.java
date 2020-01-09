@@ -104,4 +104,9 @@ public class Publish extends MqttPacket {
     public ByteBuffer getPayload() {
         return payload;
     }
+
+    @Override
+    protected void encodePayload(ByteBuffer buffer) {
+        throw new UnsupportedOperationException("not implemented");
+    }
 }

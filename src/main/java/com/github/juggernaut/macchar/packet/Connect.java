@@ -226,4 +226,9 @@ public class Connect extends MqttPacket {
     protected void encodeVariableHeader(ByteBuffer buffer) {
         throw new IllegalArgumentException("not implemented");
     }
+
+    @Override
+    protected void encodePayload(ByteBuffer buffer) {
+        throw new UnsupportedOperationException("not implemented");
+    }
 }
