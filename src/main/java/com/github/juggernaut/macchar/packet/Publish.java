@@ -26,7 +26,7 @@ public class Publish extends MqttPacket {
         validateFlags(flags);
         final QoS qos = getQoS(flags);
         final String topicName = decodeTopicName(buffer);
-        validateTopicName(topicName);
+        Utils.validateTopicName(topicName);
         int packetId = -1;
         if (qos != QoS.AT_MOST_ONCE) {
             packetId = decodePacketIdentifier(buffer);
@@ -53,13 +53,6 @@ public class Publish extends MqttPacket {
 
     private static String decodeTopicName(final ByteBuffer buffer) {
         return ByteBufferUtil.decodeUTF8String(buffer);
-    }
-
-    private static void validateTopicName(final String topicName) {
-        // The Topic Name in the PUBLISH packet MUST NOT contain wildcard characters [MQTT-3.3.2-2]
-        if (topicName.contains("#") || topicName.contains("+")) {
-            throw new IllegalArgumentException("Topic Name in PUBLISH packet MUST NOT contain wildcard characters");
-        }
     }
 
     private static int decodePacketIdentifier(final ByteBuffer buffer) {

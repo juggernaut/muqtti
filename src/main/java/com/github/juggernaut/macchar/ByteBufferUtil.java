@@ -50,7 +50,7 @@ public class ByteBufferUtil {
     public static String decodeUTF8String(final ByteBuffer buf) {
         int strLen = decodeTwoByteInteger(buf);
         if (strLen == 0) {
-            return ""; // this is f'ing crazy but the spec this is allowed
+            return ""; // this is f'ing crazy but the spec allows this
         }
         // No bounds checking here, assuming that buffer has enough
         final byte[] strBytes = new byte[strLen];

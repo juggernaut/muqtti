@@ -45,6 +45,7 @@ public class Subscribe extends MqttPacket {
         public static TopicFilter fromBuffer(ByteBuffer buffer) {
             // The Topic Filters MUST be a UTF-8 Encoded String [MQTT-3.8.3-1]
             final String filter = ByteBufferUtil.decodeUTF8String(buffer);
+            Utils.validateTopicFilter(filter);
             final byte options = buffer.get();
             validateOptions(options);
             return new TopicFilter(filter, options);
