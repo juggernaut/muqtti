@@ -1,5 +1,7 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.fsm.StateMachine;
+
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

@@ -1,6 +1,8 @@
-package com.github.juggernaut.macchar;
+package com.github.juggernaut.macchar.fsm;
 
-import com.github.juggernaut.macchar.events.PacketReceivedEvent;
+import com.github.juggernaut.macchar.Event;
+import com.github.juggernaut.macchar.MqttChannel;
+import com.github.juggernaut.macchar.fsm.events.PacketReceivedEvent;
 import com.github.juggernaut.macchar.packet.*;
 
 import java.util.List;
@@ -11,9 +13,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.github.juggernaut.macchar.MqttChannelStateMachine.State.CONNECTION_ESTABLISHED;
-import static com.github.juggernaut.macchar.MqttChannelStateMachine.State.INIT;
-import static com.github.juggernaut.macchar.MqttChannelStateMachine.Transition.transition;
+import static com.github.juggernaut.macchar.fsm.MqttChannelStateMachine.State.CONNECTION_ESTABLISHED;
+import static com.github.juggernaut.macchar.fsm.MqttChannelStateMachine.State.INIT;
+import static com.github.juggernaut.macchar.fsm.MqttChannelStateMachine.Transition.transition;
 
 /**
  * @author ameya
@@ -22,7 +24,7 @@ public class MqttChannelStateMachine implements StateMachine {
 
     private MqttChannel mqttChannel;
 
-    enum State {
+    public enum State {
         INIT,
         CONNECTION_ESTABLISHED
     }
@@ -134,7 +136,7 @@ public class MqttChannelStateMachine implements StateMachine {
         System.out.println("Sent SUBACK");
     }
 
-    protected State getState() {
+    public State getState() {
         return currentState;
     }
 

@@ -1,6 +1,7 @@
 package com.github.juggernaut.macchar;
 
-import com.github.juggernaut.macchar.events.PacketReceivedEvent;
+import com.github.juggernaut.macchar.fsm.MqttChannelStateMachine;
+import com.github.juggernaut.macchar.fsm.events.PacketReceivedEvent;
 import com.github.juggernaut.macchar.packet.Connect;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,7 +9,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static com.github.juggernaut.macchar.MqttChannelStateMachine.State.CONNECTION_ESTABLISHED;
+import static com.github.juggernaut.macchar.fsm.MqttChannelStateMachine.State.CONNECTION_ESTABLISHED;
 import static com.github.juggernaut.macchar.packet.MqttPacket.PacketType.CONNECT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

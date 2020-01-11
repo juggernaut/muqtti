@@ -1,5 +1,7 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.fsm.MqttChannelStateMachine;
+
 import java.nio.channels.SocketChannel;
 import java.util.function.Function;
 
