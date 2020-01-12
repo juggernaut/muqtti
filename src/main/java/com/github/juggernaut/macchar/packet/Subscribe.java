@@ -13,11 +13,11 @@ import java.util.List;
  */
 public class Subscribe extends MqttPacket {
 
-    public static class TopicFilter {
+    public static class Subscription {
         private final String filter;
         private final int subscriptionOptions;
 
-        private TopicFilter(String filter, int subscriptionOptions) {
+        private Subscription(String filter, int subscriptionOptions) {
             this.filter = filter;
             this.subscriptionOptions = subscriptionOptions;
         }
@@ -42,13 +42,13 @@ public class Subscribe extends MqttPacket {
             return ((subscriptionOptions >> 4) & 0x03);
         }
 
-        public static TopicFilter fromBuffer(ByteBuffer buffer) {
+        public static Subscription fromBuffer(ByteBuffer buffer) {
             // The Topic Filters MUST be a UTF-8 Encoded String [MQTT-3.8.3-1]
             final String filter = ByteBufferUtil.decodeUTF8String(buffer);
             Utils.validateTopicFilter(filter);
             final byte options = buffer.get();
             validateOptions(options);
-            return new TopicFilter(filter, options);
+            return new Subscription(filter, options);
         }
 
         private static void validateOptions(byte options) {
@@ -69,12 +69,12 @@ public class Subscribe extends MqttPacket {
     }
 
     private final int packetId;
-    private final List<TopicFilter> topicFilters;
+    private final List<Subscription> subscriptions;
 
-    public Subscribe(int flags, int packetId, List<TopicFilter> topicFilters) {
+    public Subscribe(int flags, int packetId, List<Subscription> subscriptions) {
         super(PacketType.SUBSCRIBE, flags);
         this.packetId = packetId;
-        this.topicFilters = topicFilters;
+        this.subscriptions = subscriptions;
     }
 
     @Override
@@ -104,12 +104,12 @@ public class Subscribe extends MqttPacket {
         return new Subscribe(flags, packetId, topicFilters);
     }
 
-    private static List<TopicFilter> decodeTopicFilters(ByteBuffer buffer) {
-        final List<TopicFilter> topicFilters = new ArrayList<>();
+    private static List<Subscription> decodeTopicFilters(ByteBuffer buffer) {
+        final List<Subscription> subscriptions = new ArrayList<>();
         while (buffer.hasRemaining()) {
-            topicFilters.add(TopicFilter.fromBuffer(buffer));
+            subscriptions.add(Subscription.fromBuffer(buffer));
         }
-        return topicFilters;
+        return subscriptions;
     }
 
     private static void validateFlags(int flags) {
@@ -127,8 +127,8 @@ public class Subscribe extends MqttPacket {
         return packetId;
     }
 
-    public List<TopicFilter> getTopicFilters() {
-        return topicFilters;
+    public List<Subscription> getSubscriptions() {
+        return subscriptions;
     }
 
     @Override

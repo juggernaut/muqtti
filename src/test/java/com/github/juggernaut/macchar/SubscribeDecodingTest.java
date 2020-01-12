@@ -42,7 +42,7 @@ public class SubscribeDecodingTest {
         assertEquals(SUBSCRIBE, decodedPacket.getPacketType());
         final var subscribe = (Subscribe) decodedPacket;
         assertEquals(10, subscribe.getPacketId());
-        final var topicFilters = subscribe.getTopicFilters();
+        final var topicFilters = subscribe.getSubscriptions();
         assertEquals(2, topicFilters.size());
         final var filter1 = topicFilters.get(0);
         assertEquals("a/b", filter1.getFilter());

@@ -55,4 +55,30 @@ public class Utils {
             throw new IllegalArgumentException("Multi-level wildcard (#) found at invalid position in filter " + s);
         }
     }
+
+    public static boolean doesSubscriptionMatchTopic(final String filter, final String topicName) {
+        assert filter != null;
+        assert topicName != null;
+        final String[] topicSegments = topicName.split("/");
+        final String[] filterSegments = filter.split("/");
+
+        if (filterSegments.length > topicSegments.length) {
+            // no way this topic can match because filter has more segments
+            return false;
+        }
+
+        int i;
+        for (i = 0; i < filterSegments.length; i++) {
+            if ("#".equals(filterSegments[i])) {
+                return true;
+            }
+            if ("+".equals(filterSegments[i])) {
+                continue;
+            }
+            if (!filterSegments[i].equals(topicSegments[i])) {
+                return false;
+            }
+        }
+        return i == topicSegments.length;
+    }
 }

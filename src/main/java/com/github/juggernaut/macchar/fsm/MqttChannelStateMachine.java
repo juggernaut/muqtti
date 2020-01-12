@@ -128,7 +128,7 @@ public class MqttChannelStateMachine implements StateMachine {
         assert isSubscribe(event);
         final var subscribe = ((Subscribe) event.getPacket());
         // TODO: right now only grant QoS 0 for every topic filter
-        final var reasonCodes = IntStream.range(0, subscribe.getTopicFilters().size())
+        final var reasonCodes = IntStream.range(0, subscribe.getSubscriptions().size())
                 .mapToObj(i ->SubAck.ReasonCode.GRANTED_QOS_0)
                 .collect(Collectors.toList());
         final var subAck = new SubAck(subscribe.getPacketId(), reasonCodes);
