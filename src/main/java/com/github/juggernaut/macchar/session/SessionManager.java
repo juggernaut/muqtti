@@ -1,6 +1,7 @@
 package com.github.juggernaut.macchar.session;
 
 import com.github.juggernaut.macchar.packet.Publish;
+import com.github.juggernaut.macchar.packet.Subscribe;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -39,17 +40,17 @@ public class SessionManager {
         }
 
         @Override
-        public void onPublishReceived(Publish msg) {
-
-        }
-
-        @Override
         public boolean isExpired() {
             return false;
         }
 
         @Override
         public void onDisconnect() {
+
+        }
+
+        @Override
+        public void onSubscribe(Subscribe subscribeMsg) {
 
         }
     }

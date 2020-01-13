@@ -5,6 +5,7 @@ import com.github.juggernaut.macchar.property.MqttProperty;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -13,12 +14,20 @@ import java.util.List;
 public class SubAck extends MqttPacket {
 
     public static enum ReasonCode {
-        GRANTED_QOS_0(0x0);
+        GRANTED_QOS_0(0x0),
+        GRANTED_QOS_1(0x01)
+        ;
 
         private final int value;
 
         ReasonCode(final int value) {
             this.value = value;
+        }
+
+        public static ReasonCode fromIntValue(final int input) {
+            return Arrays.stream(values()).filter(v -> v.value == input)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Illegal value " + input + " for Reason code"));
         }
     }
 

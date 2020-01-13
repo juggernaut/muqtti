@@ -21,4 +21,8 @@ public enum QoS {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Illegal value " + input + " for QoS"));
     }
+
+    public int getIntValue() {
+        return intValue;
+    }
 }
