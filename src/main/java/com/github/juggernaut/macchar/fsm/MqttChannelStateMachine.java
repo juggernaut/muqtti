@@ -130,7 +130,8 @@ public class MqttChannelStateMachine implements StateMachine {
             // A Server MAY allow a Client to supply a ClientID that has a length of zero bytes, however if it does so the Server MUST treat this as a special case and assign a unique ClientID to that Client [MQTT-3.1.3-6]
             assignedClientId = "auto-" + UUID.randomUUID().toString();
         }
-        session = sessionManager.newSession(assignedClientId);
+        final String effectiveClientId = clientId.isEmpty() ? assignedClientId : clientId;
+        session = sessionManager.newSession(effectiveClientId);
         // we aren't handing existing sessions yet, so always send SessionPresent = false
         final var connAck = new ConnAck(ConnAck.ConnectReasonCode.SUCCESS, false, Optional.ofNullable(assignedClientId));
         mqttChannel.sendPacket(connAck);

@@ -14,7 +14,7 @@ public class SubscriptionManager {
     // Map from topic filter to subscription state
     private final ConcurrentMap<String, SubscriptionState> subscriptions = new ConcurrentHashMap<>();
 
-    public SubscriptionState addSubscription(final String topicFilter) {
+    public SubscriptionState getOrCreateSubscription(final String topicFilter) {
         assert topicFilter != null;
         return subscriptions.computeIfAbsent(topicFilter, filter -> new SubscriptionState());
     }

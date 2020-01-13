@@ -20,18 +20,18 @@ public class SessionSubscription {
     private final Subscribe.Subscription subscription;
 
     /**
-     * The internal global subscription state
+     * The server-side cursor for this subscription
      */
-    private final SubscriptionState subscriptionState;
+    private final Cursor cursor;
 
-    private SessionSubscription(Optional<Integer> subscriptionIdentifier, Subscribe.Subscription subscription, SubscriptionState subscriptionState) {
+    private SessionSubscription(Optional<Integer> subscriptionIdentifier, Subscribe.Subscription subscription, Cursor cursor) {
         this.subscriptionIdentifier = subscriptionIdentifier;
         this.subscription = subscription;
-        this.subscriptionState = subscriptionState;
+        this.cursor = cursor;
     }
 
     public static SessionSubscription from(Subscribe.Subscription subscription, Optional<Integer> subscriptionIdentifier,
-                                           SubscriptionState subscriptionState) {
-        return new SessionSubscription(subscriptionIdentifier, subscription, subscriptionState);
+                                           Cursor cursor) {
+        return new SessionSubscription(subscriptionIdentifier, subscription, cursor);
     }
 }

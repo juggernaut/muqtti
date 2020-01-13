@@ -35,4 +35,8 @@ public abstract class VariableByteIntegerProperty extends MqttProperty {
         }
         throw new IllegalArgumentException("Invalid variable byte integer in buffer");
     }
+
+    public int getValue() {
+        return value;
+    }
 }
