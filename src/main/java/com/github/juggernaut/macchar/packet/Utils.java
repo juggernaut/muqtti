@@ -1,5 +1,12 @@
 package com.github.juggernaut.macchar.packet;
 
+import com.github.juggernaut.macchar.property.MqttProperty;
+import com.github.juggernaut.macchar.property.UserProperty;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 /**
  * @author ameya
  */
@@ -80,5 +87,19 @@ public class Utils {
             }
         }
         return i == topicSegments.length;
+    }
+
+    public static List<UserProperty> extractUserProperties(final List<MqttProperty> rawProperties) {
+        return rawProperties.stream()
+                .filter(prop -> prop instanceof UserProperty)
+                .map(prop -> (UserProperty) prop)
+                .collect(Collectors.toList());
+    }
+
+    public static <P extends MqttProperty> Optional<P> extractProperty(final Class<P> klass, List<MqttProperty> rawProperties) {
+        return rawProperties.stream()
+                .filter(prop -> prop.getClass().equals(klass))
+                .map(klass::cast)
+                .findFirst();
     }
 }

@@ -70,11 +70,13 @@ public class Subscribe extends MqttPacket {
 
     private final int packetId;
     private final List<Subscription> subscriptions;
+    private final SubscribeProperties properties;
 
-    public Subscribe(int flags, int packetId, List<Subscription> subscriptions) {
+    public Subscribe(int flags, int packetId, List<Subscription> subscriptions, SubscribeProperties properties) {
         super(PacketType.SUBSCRIBE, flags);
         this.packetId = packetId;
         this.subscriptions = subscriptions;
+        this.properties = properties;
     }
 
     @Override
@@ -95,13 +97,14 @@ public class Subscribe extends MqttPacket {
     public static Subscribe fromBuffer(int flags, ByteBuffer buffer) {
         validateFlags(flags);
         int packetId = decodePacketIdentifier(buffer);
-        final var properties = PropertiesDecoder.decode(buffer);
+        final var rawProperties = PropertiesDecoder.decode(buffer);
+        final var subscribeProperties = SubscribeProperties.fromRawProperties(rawProperties);
         if (!buffer.hasRemaining()) {
             // The Payload MUST contain at least one Topic Filter and Subscription Options pair [MQTT-3.8.3-2]
             throw new IllegalArgumentException("SUBSCRIBE packet must have a non-empty payload");
         }
         final var topicFilters = decodeTopicFilters(buffer);
-        return new Subscribe(flags, packetId, topicFilters);
+        return new Subscribe(flags, packetId, topicFilters, subscribeProperties);
     }
 
     private static List<Subscription> decodeTopicFilters(ByteBuffer buffer) {
@@ -134,5 +137,9 @@ public class Subscribe extends MqttPacket {
     @Override
     protected void encodePayload(ByteBuffer buffer) {
         throw new UnsupportedOperationException("not implemented");
+    }
+
+    public SubscribeProperties getProperties() {
+        return properties;
     }
 }

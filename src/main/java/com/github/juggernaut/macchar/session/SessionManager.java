@@ -51,7 +51,7 @@ public class SessionManager {
 
         @Override
         public void onSubscribe(Subscribe subscribeMsg) {
-
+            System.out.println("on subscribe called..");
         }
     }
 
