@@ -91,7 +91,8 @@ public class ConnAck extends MqttPacket {
     }
 
     @Override
-    protected void encodePayload(ByteBuffer buffer) {
-        // Nothing to do here, payload is empty
+    protected ByteBuffer encodePayload() {
+        // payload for connack is empty
+        return null;
     }
 }

@@ -1,5 +1,6 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.fsm.events.ChannelDisconnectedEvent;
 import com.github.juggernaut.macchar.fsm.events.PacketReceivedEvent;
 import com.github.juggernaut.macchar.packet.MqttPacket;
 
@@ -48,13 +49,28 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
     }
 
     public void sendPacket(MqttPacket packet) {
-        final ByteBuffer encoded = packet.encode();
-        encoded.flip();
+        final ByteBuffer[] encoded = packet.encode();
         try {
             // TODO: handle partial writes here
             socketChannel.write(encoded);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void sendPacketAndDisconnect(MqttPacket packet) {
+        final ByteBuffer[] encoded = packet.encode();
+        try {
+            // TODO: handle partial writes here
+            socketChannel.write(encoded);
+            socketChannel.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onDisconnect() {
+        mqttChannelActor.sendMessage(new ChannelDisconnectedEvent());
     }
 }

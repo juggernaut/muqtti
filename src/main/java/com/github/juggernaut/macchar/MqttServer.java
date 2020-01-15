@@ -2,6 +2,8 @@ package com.github.juggernaut.macchar;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketOptions;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -44,6 +46,8 @@ public class MqttServer {
                         if (newSocket != null) { // don't think this will ever happen, but defensive programming
                             System.out.println("Accepted new connection from " + newSocket.getRemoteAddress());
                             newSocket.configureBlocking(false);
+                            // Turn off nagle
+                            newSocket.setOption(StandardSocketOptions.TCP_NODELAY, true);
                             final var newChannelKey = newSocket.register(selector, SelectionKey.OP_READ);
                             final var channelListener = channelListenerFactory.apply(newSocket);
                             newChannelKey.attach(channelListener);
@@ -54,7 +58,12 @@ public class MqttServer {
                 } else if (selectedKey.isReadable()) {
                     final var socketChannel = (SocketChannel) selectedKey.channel();
                     try {
+                        final var channelListener = (ChannelListener) selectedKey.attachment();
                         int numberReadBytes = socketChannel.read(readBuffer);
+                        if (numberReadBytes == -1) {
+                            selectedKey.cancel();
+                            channelListener.onDisconnect();
+                        }
                         while (numberReadBytes > 0) {
                             readBuffer.flip();
                             /*
@@ -62,7 +71,6 @@ public class MqttServer {
                                 socketChannel.write(readBuffer);
                             }
                             */
-                            final var channelListener = (ChannelListener) selectedKey.attachment();
                             // It is expected that all of the buffer is read by the listener
                             channelListener.onRead(readBuffer);
                             if (readBuffer.hasRemaining()) {

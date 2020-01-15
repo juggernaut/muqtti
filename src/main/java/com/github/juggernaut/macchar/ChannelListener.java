@@ -8,4 +8,6 @@ import java.nio.ByteBuffer;
 public interface ChannelListener {
 
     void onRead(ByteBuffer buffer);
+
+    void onDisconnect();
 }

@@ -38,4 +38,26 @@ public class TestUtils {
         }
         return buffer.flip();
     }
+
+    public static String byteBufToHex(final ByteBuffer buffer) {
+        final byte[] data = new byte[buffer.remaining()];
+        buffer.get(data);
+        final StringBuilder sb = new StringBuilder();
+        for (byte datum : data) {
+            int lowerNibble = datum & 0x0f;
+            int higherNibble = (datum >> 4) & 0x0f;
+            sb.append(nibbleToChar(higherNibble)).append(nibbleToChar(lowerNibble));
+        }
+        return sb.toString();
+    }
+
+    private static char nibbleToChar(int nibble) {
+        if (nibble >= 0 && nibble <= 9) {
+            return (char) ('0' + nibble);
+        } else if (nibble <= 15) {
+            return (char) ('a' + (nibble - 10));
+        } else {
+            throw new IllegalArgumentException("invalid hex value");
+        }
+    }
 }

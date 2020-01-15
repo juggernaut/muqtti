@@ -1,6 +1,5 @@
 package com.github.juggernaut.macchar.fsm.events;
 
-import com.github.juggernaut.macchar.Event;
 import com.github.juggernaut.macchar.packet.MqttPacket;
 
 /**

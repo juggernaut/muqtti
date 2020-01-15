@@ -5,31 +5,12 @@ import com.github.juggernaut.macchar.property.MqttProperty;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * @author ameya
  */
 public class SubAck extends MqttPacket {
-
-    public static enum ReasonCode {
-        GRANTED_QOS_0(0x0),
-        GRANTED_QOS_1(0x01)
-        ;
-
-        private final int value;
-
-        ReasonCode(final int value) {
-            this.value = value;
-        }
-
-        public static ReasonCode fromIntValue(final int input) {
-            return Arrays.stream(values()).filter(v -> v.value == input)
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Illegal value " + input + " for Reason code"));
-        }
-    }
 
     private final int packetId;
     private final List<ReasonCode> reasonCodes;
@@ -61,12 +42,14 @@ public class SubAck extends MqttPacket {
         encodeProperties(buffer, properties);
     }
 
-    @Override
-    protected void encodePayload(ByteBuffer buffer) {
-        encodeReasonCodes(buffer);
+    private void encodeReasonCodes(ByteBuffer buffer) {
+        reasonCodes.forEach(code -> buffer.put((byte) code.getValue()));
     }
 
-    private void encodeReasonCodes(ByteBuffer buffer) {
-        reasonCodes.forEach(code -> buffer.put((byte) code.value));
+    @Override
+    protected ByteBuffer encodePayload() {
+        final var payload = ByteBuffer.allocate(reasonCodes.size());
+        encodeReasonCodes(payload);
+        return payload.flip();
     }
 }

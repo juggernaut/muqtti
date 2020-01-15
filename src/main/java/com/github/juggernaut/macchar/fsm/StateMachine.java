@@ -1,6 +1,6 @@
 package com.github.juggernaut.macchar.fsm;
 
-import com.github.juggernaut.macchar.Event;
+import com.github.juggernaut.macchar.fsm.events.Event;
 
 /**
  * @author ameya

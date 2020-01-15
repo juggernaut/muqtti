@@ -11,10 +11,11 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static com.github.juggernaut.macchar.fsm.MqttChannelStateMachine.State.CONNECTION_ESTABLISHED;
+import static com.github.juggernaut.macchar.fsm.MqttChannelStateMachine.State.ESTABLISHED;
 import static com.github.juggernaut.macchar.packet.MqttPacket.PacketType.CONNECT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +29,7 @@ public class MqttChannelStateMachineTest {
     @Mock private Connect connect;
     @Mock private SessionManager sessionManager;
     @Mock private Session session;
+    @Mock private Actor actor;
 
     private MqttChannelStateMachine fsm;
 
@@ -35,14 +37,15 @@ public class MqttChannelStateMachineTest {
     @Before
     public void setUp() {
         fsm = new MqttChannelStateMachine(channel, sessionManager);
+        fsm.setActor(actor);
         fsm.init();
         when(connect.getPacketType()).thenReturn(CONNECT);
-        when(sessionManager.newSession(anyString())).thenReturn(session);
+        when(sessionManager.newSession(anyString(), any(Actor.class), 0L)).thenReturn(session);
     }
 
     @Test
     public void testInitToConnected() {
         assertTrue(fsm.onEvent(new PacketReceivedEvent(connect)));
-        assertEquals(CONNECTION_ESTABLISHED, fsm.getState());
+        assertEquals(ESTABLISHED, fsm.getState());
     }
 }

@@ -1,6 +1,8 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.fsm.ActorStateMachine;
 import com.github.juggernaut.macchar.fsm.StateMachine;
+import com.github.juggernaut.macchar.fsm.events.Event;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,12 +30,13 @@ public class ActorSystem {
      * @param stateMachine
      * @return
      */
-    public Actor createActor(final StateMachine stateMachine) {
+    public Actor createActor(final ActorStateMachine stateMachine) {
         final var actor = new DefaultActor(stateMachine);
         final var previous = actorMap.putIfAbsent(actor.getId(), actor);
         if (previous != null) {
             throw new RuntimeException("Actor with id " + actor.getId() + " already exists");
         }
+        stateMachine.setActor(actor);
         stateMachine.init();
         return actor;
     }

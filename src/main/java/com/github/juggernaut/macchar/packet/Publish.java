@@ -136,7 +136,7 @@ public class Publish extends MqttPacket {
     }
 
     @Override
-    protected void encodePayload(ByteBuffer buffer) {
-        throw new UnsupportedOperationException("not implemented");
+    protected ByteBuffer encodePayload() {
+        return payload;
     }
 }

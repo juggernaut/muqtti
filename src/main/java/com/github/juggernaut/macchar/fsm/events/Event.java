@@ -1,4 +1,4 @@
-package com.github.juggernaut.macchar;
+package com.github.juggernaut.macchar.fsm.events;
 
 /**
  * @author ameya

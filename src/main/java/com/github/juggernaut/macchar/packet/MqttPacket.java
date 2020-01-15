@@ -60,17 +60,23 @@ public abstract class MqttPacket {
     protected abstract int getEncodedVariableHeaderLength();
     protected abstract int getEncodedPayloadLength();
     protected abstract void encodeVariableHeader(ByteBuffer buffer);
-    protected abstract void encodePayload(ByteBuffer buffer);
+    protected abstract ByteBuffer encodePayload();
 
-    public ByteBuffer encode() {
+    public ByteBuffer[] encode() {
         final int remainingLength = getEncodedVariableHeaderLength() + getEncodedPayloadLength();
-        final int packetSize = 1 + ByteBufferUtil.getEncodedVariableByteIntegerLength(remainingLength) + remainingLength;
-        final var buffer = ByteBuffer.allocate(packetSize);
+        //final int packetSize = 1 + ByteBufferUtil.getEncodedVariableByteIntegerLength(remainingLength) + remainingLength;
+        final int packetWithoutPayloadSize = 1 + ByteBufferUtil.getEncodedVariableByteIntegerLength(remainingLength) + getEncodedVariableHeaderLength();
+        final var buffer = ByteBuffer.allocate(packetWithoutPayloadSize);
         encodeFixedHeader(buffer);
         encodeRemainingLength(buffer, remainingLength);
         encodeVariableHeader(buffer);
-        encodePayload(buffer);
-        return buffer;
+        buffer.flip();
+        // Assuming payload is already flipped
+        final var payload = encodePayload();
+        if (payload != null) {
+            return new ByteBuffer[] { buffer, payload };
+        }
+        return new ByteBuffer[] { buffer };
     }
 
     private void encodeFixedHeader(final ByteBuffer buffer) {

@@ -36,7 +36,7 @@ public class SubscriptionState {
         listeners.add(listener);
     }
 
-    public void removeConsumer(final SubscriptionListener listener) {
+    public void removeListener(final SubscriptionListener listener) {
         listeners.remove(listener);
     }
 

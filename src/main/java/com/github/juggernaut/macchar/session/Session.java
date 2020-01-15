@@ -1,5 +1,6 @@
 package com.github.juggernaut.macchar.session;
 
+import com.github.juggernaut.macchar.packet.Disconnect;
 import com.github.juggernaut.macchar.packet.Publish;
 import com.github.juggernaut.macchar.packet.Subscribe;
 
@@ -16,8 +17,16 @@ public interface Session {
 
     boolean isExpired();
 
+    boolean isConnected();
+
     void onDisconnect();
 
     void onSubscribe(Subscribe subscribeMsg);
+
+    void onPublish(Publish publishMsg);
+
+    void sendDisconnect(Disconnect disconnect);
+
+    void remove();
 
 }
