@@ -72,6 +72,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             transition(INIT, ESTABLISHED, PacketReceivedEvent.class, this::isConnect, this::handleConnect),
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isSubscribe, this::handleSubscribe),
             transition(ESTABLISHED, ESTABLISHED, SendQoS0PublishEvent.class, p -> true, this::handleSendQoS0Publish),
+            transition(ESTABLISHED, DISCONNECTED, PacketReceivedEvent.class, this::isPublishQoS2, this::handleQoS2PublishReceived),
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isPublish, this::handlePublishReceived),
             transition(ESTABLISHED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, this::handleChannelDisconnected),
             transition(ESTABLISHED, DISCONNECTED, SendDisconnectEvent.class, p -> true, this::handleSendDisconnected),
@@ -128,6 +129,10 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     private boolean isPublish(final PacketReceivedEvent event) {
         return event.getPacket().getPacketType() == MqttPacket.PacketType.PUBLISH;
+    }
+
+    private boolean isPublishQoS2(final PacketReceivedEvent event) {
+        return isPublish(event) && ((Publish) event.getPacket()).getQoS() == QoS.EXACTLY_ONCE;
     }
 
     private void handleConnect(final PacketReceivedEvent event) {
@@ -209,6 +214,17 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         final var publish = ((Publish) event.getPacket());
         System.out.println("Received PUBLISH, pubbing it internally");
         session.onPublish(publish);
+        if (publish.getQoS() == QoS.AT_LEAST_ONCE) {
+            sendPubAck(publish);
+        }
+    }
+
+    private void sendPubAck(final Publish publish) {
+        if (publish.getPacketId().isEmpty()) {
+            throw new IllegalStateException("Publish packet with QoS 1 has no packet identifier, this is a serious programming error");
+        }
+        final var pubAck = PubAck.create(publish.getPacketId().get(), PubAck.ReasonCode.SUCCESS);
+        mqttChannel.sendPacket(pubAck);
     }
 
     private void handleSendQoS0Publish(final SendQoS0PublishEvent event) {
@@ -229,8 +245,19 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     }
 
     private void handleSendDisconnected(final SendDisconnectEvent event) {
+        sendDisconnect(event.getMsg());
+    }
+
+    private void handleQoS2PublishReceived(final PacketReceivedEvent event) {
+        assert isPublishQoS2(event);
+        // [MQTT-3.2.2-11] It is a Protocol Error if the Server receives a PUBLISH packet with a QoS greater than the Maximum QoS it specified. In this case use DISCONNECT with Reason Code 0x9B (QoS not supported)
+        final var disconnect = Disconnect.create(ReasonCode.QOS_NOT_SUPPORTED);
+        sendDisconnect(disconnect);
+    }
+
+    private void sendDisconnect(final Disconnect disconnect) {
         System.out.println("Sending DISCONNECT to " + session.getId());
-        mqttChannel.sendPacketAndDisconnect(event.getMsg());
+        mqttChannel.sendPacketAndDisconnect(disconnect);
     }
 
     public State getState() {

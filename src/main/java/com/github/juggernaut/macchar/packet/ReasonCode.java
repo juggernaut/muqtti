@@ -9,6 +9,7 @@ public enum ReasonCode {
     GRANTED_QOS_0(0x0),
     GRANTED_QOS_1(0x01),
     SESSION_TAKEN_OVER(0x8E),
+    QOS_NOT_SUPPORTED(0x9B),
     ;
 
     private final int value;
