@@ -1,7 +1,9 @@
 package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.ByteBufferUtil;
+import com.github.juggernaut.macchar.Configuration;
 import com.github.juggernaut.macchar.property.AssignedClientIdentifier;
+import com.github.juggernaut.macchar.property.MaximumQoS;
 import com.github.juggernaut.macchar.property.MqttProperty;
 
 import java.nio.ByteBuffer;
@@ -46,6 +48,7 @@ public class ConnAck extends MqttPacket {
     }
 
     private void populateProperties() {
+        properties.add(new MaximumQoS(Configuration.MAX_SUPPORTED_QOS));
         assignedClientId.map(AssignedClientIdentifier::new).ifPresent(properties::add);
     }
 

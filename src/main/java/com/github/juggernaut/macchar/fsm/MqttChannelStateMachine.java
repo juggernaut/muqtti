@@ -1,5 +1,6 @@
 package com.github.juggernaut.macchar.fsm;
 
+import com.github.juggernaut.macchar.Configuration;
 import com.github.juggernaut.macchar.fsm.events.*;
 import com.github.juggernaut.macchar.MqttChannel;
 import com.github.juggernaut.macchar.QoS;
@@ -29,8 +30,6 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private State currentState;
 
     private Session session;
-
-    private static final QoS MAX_SUPPORTED_QOS = QoS.AT_LEAST_ONCE;
 
     public enum State {
         INIT,
@@ -196,7 +195,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         session.onSubscribe(subscribe);
         // The QoS of Application Messages sent in response to a Subscription MUST be the minimum of the QoS of the originally published message and the Maximum QoS granted by the Server [MQTT-3.8.4-8]
         final var reasonCodes = subscribe.getSubscriptions().stream()
-                .map(subscription -> Math.min(MAX_SUPPORTED_QOS.getIntValue(), subscription.getQoS().getIntValue()))
+                .map(subscription -> Math.min(Configuration.MAX_SUPPORTED_QOS.getIntValue(), subscription.getQoS().getIntValue()))
                 .map(ReasonCode::fromIntValue)
                 .collect(Collectors.toList());
         final var subAck = new SubAck(subscribe.getPacketId(), reasonCodes);
