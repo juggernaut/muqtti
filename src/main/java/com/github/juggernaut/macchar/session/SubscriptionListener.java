@@ -1,11 +1,14 @@
 package com.github.juggernaut.macchar.session;
 
+import com.github.juggernaut.macchar.QoS;
 import com.github.juggernaut.macchar.packet.Publish;
 
 /**
  * @author ameya
  */
 public interface SubscriptionListener {
+
+    QoS getSubscriptionMaxQoS();
 
     void onMatchedQoS0Message(Publish msg);
 

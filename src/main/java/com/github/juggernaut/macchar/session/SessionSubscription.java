@@ -1,5 +1,6 @@
 package com.github.juggernaut.macchar.session;
 
+import com.github.juggernaut.macchar.QoS;
 import com.github.juggernaut.macchar.fsm.events.QoS1PublishMatchedEvent;
 import com.github.juggernaut.macchar.fsm.events.SendQoS0PublishEvent;
 import com.github.juggernaut.macchar.packet.Publish;
@@ -34,12 +35,12 @@ public class SessionSubscription implements SubscriptionListener {
     private final SubscriptionState subscriptionState;
 
     /**
-     * The server-side cursor for this subscription
+     * The server-side cursor for this subscription; present only if this is a QoS1 subscription
      */
-    private final Cursor cursor;
+    private final Optional<Cursor> cursor;
 
     private SessionSubscription(Optional<Integer> subscriptionIdentifier, Subscribe.Subscription subscription, Session session,
-                                final SubscriptionState subscriptionState, Cursor cursor) {
+                                final SubscriptionState subscriptionState, Optional<Cursor> cursor) {
         this.subscriptionIdentifier = subscriptionIdentifier;
         this.subscription = subscription;
         this.session = session;
@@ -49,8 +50,8 @@ public class SessionSubscription implements SubscriptionListener {
 
     public static SessionSubscription from(Subscribe.Subscription subscription, Optional<Integer> subscriptionIdentifier,
                                            final Session session, final SubscriptionState subscriptionState) {
-        final var cursor = subscriptionState.newCursor();
-        final var sessionSubscription = new SessionSubscription(subscriptionIdentifier, subscription, session, subscriptionState, cursor);
+        final var cursor = subscription.getQoS() == QoS.AT_LEAST_ONCE ? subscriptionState.newCursor() : null;
+        final var sessionSubscription = new SessionSubscription(subscriptionIdentifier, subscription, session, subscriptionState, Optional.ofNullable(cursor));
         subscriptionState.addListener(sessionSubscription);
         return sessionSubscription;
     }
@@ -62,11 +63,13 @@ public class SessionSubscription implements SubscriptionListener {
 
     @Override
     public void onMatchedQoS1Message() {
+        assert subscription.getQoS() == QoS.AT_LEAST_ONCE;
         session.getActor().sendMessage(new QoS1PublishMatchedEvent());
     }
 
     public void readQoS1Messages(final List<Publish> messages, final int maxMessages) {
-        subscriptionState.readQoS1Messages(cursor, maxMessages, messages);
+        assert cursor.isPresent();
+        subscriptionState.readQoS1Messages(cursor.get(), maxMessages, messages);
     }
 
     public void deactivate() {
@@ -74,11 +77,16 @@ public class SessionSubscription implements SubscriptionListener {
     }
 
     public void delete() {
-        subscriptionState.deleteCursor(cursor);
+        cursor.ifPresent(subscriptionState::deleteCursor);
     }
 
     public void reactivate() {
         subscriptionState.addListener(this);
         // TODO: handle an invalid cursor here
+    }
+
+    @Override
+    public QoS getSubscriptionMaxQoS() {
+        return subscription.getQoS();
     }
 }

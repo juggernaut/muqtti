@@ -1,6 +1,7 @@
 package com.github.juggernaut.macchar.session;
 
 import com.github.juggernaut.macchar.Actor;
+import com.github.juggernaut.macchar.QoS;
 import com.github.juggernaut.macchar.fsm.events.SendDisconnectEvent;
 import com.github.juggernaut.macchar.packet.Disconnect;
 import com.github.juggernaut.macchar.packet.Publish;
@@ -145,6 +146,9 @@ public class SessionManager {
             final List<Publish> messages = new ArrayList<>();
             int remaining = maxMessages;
             for (SessionSubscription s: sessionSubscriptions.values()) {
+                if (s.getSubscriptionMaxQoS() == QoS.AT_MOST_ONCE) {
+                    continue;
+                }
                 s.readQoS1Messages(messages, remaining);
                 remaining = maxMessages - messages.size();
                 if (remaining <= 0) {

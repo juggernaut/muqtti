@@ -63,7 +63,7 @@ public class SubscriptionState {
                 }
             });
         }
-        fanoutQoS1();
+        fanoutQoS1(msg);
     }
 
     public synchronized void readQoS1Messages(Cursor cursor, int numMessages, List<Publish> messages) {
@@ -79,8 +79,15 @@ public class SubscriptionState {
         listeners.forEach(listener -> listener.onMatchedQoS0Message(msg));
     }
 
-    private void fanoutQoS1() {
-        listeners.forEach(SubscriptionListener::onMatchedQoS1Message);
+    private void fanoutQoS1(Publish msg) {
+        listeners.forEach(listener -> {
+            // subscription is QoS0, so just send it directly
+            if (listener.getSubscriptionMaxQoS() == QoS.AT_MOST_ONCE) {
+                listener.onMatchedQoS0Message(msg);
+            } else {
+                listener.onMatchedQoS1Message();
+            }
+        });
     }
 
     public SubscriptionId getSubscriptionId() {
