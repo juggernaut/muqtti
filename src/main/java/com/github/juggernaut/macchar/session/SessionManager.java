@@ -7,7 +7,9 @@ import com.github.juggernaut.macchar.packet.Publish;
 import com.github.juggernaut.macchar.packet.Subscribe;
 import com.github.juggernaut.macchar.property.SubscriptionIdentifier;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -125,6 +127,21 @@ public class SessionManager {
             // Do this here, don't wait for the socket to be disconnected because the caller needs to know if
             // the session expired
             onDisconnect();
+        }
+
+        @Override
+        public List<Publish> readAvailableQoS1Messages(int maxMessages) {
+            assert maxMessages > 0;
+            final List<Publish> messages = new ArrayList<>();
+            int remaining = maxMessages;
+            for (SessionSubscription s: sessionSubscriptions.values()) {
+                s.readQoS1Messages(messages, remaining);
+                remaining = maxMessages - messages.size();
+                if (remaining <= 0) {
+                    break;
+                }
+            }
+            return messages;
         }
     }
 

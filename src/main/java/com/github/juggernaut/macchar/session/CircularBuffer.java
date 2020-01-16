@@ -1,16 +1,17 @@
 package com.github.juggernaut.macchar.session;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 
 /**
  * @author ameya
  */
+// TODO: revisit this whole circular buffer implementation
 public class CircularBuffer<E> {
 
     private final Object[] array;
     private final int capacity;
     // The next position that is writeable
-    private volatile int position= 0;
+    private volatile int position = 0;
 
     public CircularBuffer(int capacity) {
         this.capacity = capacity;
@@ -25,7 +26,7 @@ public class CircularBuffer<E> {
      * @param item
      * @return
      */
-    public int add(final E item) {
+    public int put(final E item) {
         array[position] = item;
         position = (position + 1) % capacity;
         return position;
@@ -33,5 +34,31 @@ public class CircularBuffer<E> {
 
     public int getPosition() {
         return position;
+    }
+
+    /**
+     * Read the buffer up to the current position (exclusive) starting from a specified position (exclusive) i.e
+     * startPos is the position until which data is already assumed to have been read
+     *
+     * @param startPos position in the buffer until which data has already been read
+     * @return the position until which data has been read
+     */
+    public int take(int startPos, List<E> result) {
+        return take(startPos, result, -1);
+    }
+
+    public int take(int startPos, List<E> result, int numElements) {
+        assert startPos >= -1 && startPos < capacity;
+        assert numElements == -1 || numElements > 0;
+        int elementsReadSoFar = 0;
+        int readUntilPos = startPos;
+        int i = (startPos + 1) % capacity;
+        while (i != position && (numElements == -1 || elementsReadSoFar < numElements)) {
+            result.add((E) array[i]);
+            readUntilPos = (readUntilPos + 1) % capacity;
+            i = (i + 1) % capacity;
+            elementsReadSoFar++;
+        }
+        return readUntilPos;
     }
 }

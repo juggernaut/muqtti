@@ -1,10 +1,12 @@
 package com.github.juggernaut.macchar.session;
 
 import com.github.juggernaut.macchar.Actor;
+import com.github.juggernaut.macchar.fsm.events.QoS1PublishMatchedEvent;
 import com.github.juggernaut.macchar.fsm.events.SendQoS0PublishEvent;
 import com.github.juggernaut.macchar.packet.Publish;
 import com.github.juggernaut.macchar.packet.Subscribe;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -61,10 +63,15 @@ public class SessionSubscription implements SubscriptionListener {
 
     @Override
     public void onMatchedQoS1Message() {
-        // TODO
+        actor.sendMessage(new QoS1PublishMatchedEvent());
+    }
+
+    public void readQoS1Messages(final List<Publish> messages, final int maxMessages) {
+        subscriptionState.readQoS1Messages(cursor, maxMessages, messages);
     }
 
     public void deactivate() {
         subscriptionState.removeListener(this);
+        subscriptionState.deleteCursor(cursor);
     }
 }

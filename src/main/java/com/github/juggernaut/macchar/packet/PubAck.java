@@ -2,6 +2,7 @@ package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.ByteBufferUtil;
 import com.github.juggernaut.macchar.property.MqttProperty;
+import com.github.juggernaut.macchar.property.PropertiesDecoder;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -55,6 +56,32 @@ public class PubAck extends MqttPacket {
 
     public static PubAck create(int packetId, ReasonCode reasonCode) {
         return new PubAck(packetId, reasonCode);
+    }
+
+    public static PubAck fromBuffer(int flags, ByteBuffer buffer) {
+        validateFlags(flags);
+        int packetId = ByteBufferUtil.decodeTwoByteInteger(buffer);
+        final ReasonCode reasonCode;
+        if (!buffer.hasRemaining()) {
+            // Byte 3 in the Variable Header is the PUBACK Reason Code. If the Remaining Length is 2, then there is no Reason Code and the value of 0x00 (Success) is used.
+            reasonCode = ReasonCode.SUCCESS;
+        } else {
+            final byte reasonCodeByte = buffer.get();
+            reasonCode = ReasonCode.fromIntValue(Byte.toUnsignedInt(reasonCodeByte));
+        }
+        if (!buffer.hasRemaining()) {
+            // If the Remaining Length is less than 4 there is no Property Length and the value of 0 is used
+            // TODO: empty properties
+        } else {
+            PropertiesDecoder.decode(buffer);
+        }
+        return new PubAck(packetId, reasonCode);
+    }
+
+    private static void validateFlags(int flags) {
+        if (flags != 0) {
+            throw new IllegalArgumentException("PUBACK flags must be 0");
+        }
     }
 
     @Override

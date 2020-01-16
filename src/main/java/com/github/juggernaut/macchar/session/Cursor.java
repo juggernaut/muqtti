@@ -6,7 +6,7 @@ package com.github.juggernaut.macchar.session;
 public class Cursor {
 
     private final SubscriptionId subscriptionId;
-    private final int position;
+    private int position;
     private volatile boolean valid = true;
 
     public Cursor(SubscriptionId subscriptionId, int position) {
@@ -20,6 +20,10 @@ public class Cursor {
 
     public int getPosition() {
         return position;
+    }
+
+    public void setPosition(final int newPosition) {
+        this.position = newPosition;
     }
 
     public boolean isValid() {

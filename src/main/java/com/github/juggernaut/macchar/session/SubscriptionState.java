@@ -32,6 +32,10 @@ public class SubscriptionState {
         return cursor;
     }
 
+    public void deleteCursor(Cursor cursor) {
+        cursors.remove(cursor);
+    }
+
     public void addListener(final SubscriptionListener listener) {
         listeners.add(listener);
     }
@@ -48,16 +52,27 @@ public class SubscriptionState {
         }
     }
 
-    private synchronized void save(Publish msg) {
-        final int newPos = messageBuffer.add(msg);
-        cursors.forEach(cursor -> {
-            // The write pos has gone just past our cursor which means there is no valid
-            // data to read for the cursor, so invalidate it.
-            if (newPos == cursor.getPosition() + 1) {
-                cursor.invalidate();
-            }
-        });
+    private void save(Publish msg) {
+        synchronized(this) {
+            final int newPos = messageBuffer.put(msg);
+            cursors.forEach(cursor -> {
+                // The write pos has wrapped around and bumped against our cursor, so invalidate it.
+                // TODO: this logic is wrong! (off by one error)
+                if (newPos == cursor.getPosition()) {
+                    cursor.invalidate();
+                }
+            });
+        }
         fanoutQoS1();
+    }
+
+    public synchronized void readQoS1Messages(Cursor cursor, int numMessages, List<Publish> messages) {
+        assert numMessages > 0;
+        if (!cursor.isValid()) {
+            throw new IllegalStateException("Cursor " + cursor + " is invalidated, session state needs to be invalidated as well");
+        }
+        final int readUntilPos = messageBuffer.take(cursor.getPosition(), messages);
+        cursor.setPosition(readUntilPos);
     }
 
     private void fanoutQoS0(Publish msg) {

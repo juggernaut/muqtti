@@ -4,6 +4,8 @@ import com.github.juggernaut.macchar.packet.Disconnect;
 import com.github.juggernaut.macchar.packet.Publish;
 import com.github.juggernaut.macchar.packet.Subscribe;
 
+import java.util.List;
+
 /**
  * @author ameya
  */
@@ -28,5 +30,7 @@ public interface Session {
     void sendDisconnect(Disconnect disconnect);
 
     void remove();
+
+    List<Publish> readAvailableQoS1Messages(int maxMessages);
 
 }

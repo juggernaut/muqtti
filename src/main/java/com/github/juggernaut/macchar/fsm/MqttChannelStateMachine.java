@@ -31,6 +31,15 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     private Session session;
 
+    private int currentPublishPacketId = 1;
+    private int earliestOutstandingPacketId = -1;
+
+    private int clientReceiveMaximum = 10; // default
+
+    private int outstandingQoS1Messages = 0;
+
+    private boolean matchingQoS1MessagesAvailable = false;
+
     public enum State {
         INIT,
         ESTABLISHED,
@@ -74,6 +83,8 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             transition(ESTABLISHED, ESTABLISHED, SendQoS0PublishEvent.class, p -> true, this::handleSendQoS0Publish),
             transition(ESTABLISHED, DISCONNECTED, PacketReceivedEvent.class, this::isPublishQoS2, this::handleQoS2PublishReceived),
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isPublish, this::handlePublishReceived),
+            transition(ESTABLISHED, ESTABLISHED, QoS1PublishMatchedEvent.class, p -> true, this::handleQoS1PublishMatched),
+            transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isPubAck, this::handlePubAckReceived),
             transition(ESTABLISHED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, this::handleChannelDisconnected),
             transition(ESTABLISHED, DISCONNECTED, SendDisconnectEvent.class, p -> true, this::handleSendDisconnected),
             transition(DISCONNECTED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, p -> {})
@@ -133,6 +144,10 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     private boolean isPublishQoS2(final PacketReceivedEvent event) {
         return isPublish(event) && ((Publish) event.getPacket()).getQoS() == QoS.EXACTLY_ONCE;
+    }
+
+    private boolean isPubAck(final PacketReceivedEvent event) {
+        return event.getPacket().getPacketType() == MqttPacket.PacketType.PUBACK;
     }
 
     private void handleConnect(final PacketReceivedEvent event) {
@@ -258,6 +273,64 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private void sendDisconnect(final Disconnect disconnect) {
         System.out.println("Sending DISCONNECT to " + session.getId());
         mqttChannel.sendPacketAndDisconnect(disconnect);
+    }
+
+    private void handleQoS1PublishMatched(final QoS1PublishMatchedEvent event) {
+        matchingQoS1MessagesAvailable = true;
+        readAndSendQoS1MessagesIfAvailable();
+    }
+
+    private void readAndSendQoS1MessagesIfAvailable() {
+        int numCanSend = clientReceiveMaximum - outstandingQoS1Messages;
+        if (numCanSend == 0) {
+            System.out.println("Already at receive maximum, can't send more QoS1 messages");
+            return;
+        }
+        final var availableMessages = session.readAvailableQoS1Messages(numCanSend);
+        if (availableMessages.size() < numCanSend) {
+            matchingQoS1MessagesAvailable = false;
+        }
+        if (availableMessages.size() > 0) {
+            earliestOutstandingPacketId = currentPublishPacketId;
+            availableMessages.stream()
+                    .map(m -> Publish.create(QoS.AT_LEAST_ONCE, false, false, m.getTopicName(), Optional.of(incrementPublishPacketId()), m.getPayload()))
+                    .forEach(publish -> mqttChannel.sendPacket(publish));
+            outstandingQoS1Messages += availableMessages.size();
+        }
+    }
+
+    private void handlePubAckReceived(final PacketReceivedEvent event) {
+        assert isPubAck(event);
+        final var pubAck = (PubAck) event.getPacket();
+        // Clients MUST send PUBACKs in order the PUBLISHes were received
+        if (pubAck.getPacketId() != earliestOutstandingPacketId) {
+            // TODO: handle this better
+            throw new IllegalStateException("Invalid PUBACK received");
+        }
+        outstandingQoS1Messages--;
+        earliestOutstandingPacketId = (earliestOutstandingPacketId + 1) % 65535;
+        if (earliestOutstandingPacketId == 0) {
+            earliestOutstandingPacketId = 1;
+        }
+        if (earliestOutstandingPacketId == currentPublishPacketId) {
+            // This means nothing is outstanding
+            earliestOutstandingPacketId = -1;
+        }
+        // this PUBACK may have freed up our send quota
+        if (matchingQoS1MessagesAvailable) {
+            readAndSendQoS1MessagesIfAvailable();
+        }
+
+    }
+
+    private int incrementPublishPacketId() {
+        final int currentId = currentPublishPacketId;
+        currentPublishPacketId = (currentPublishPacketId + 1) % 65535;
+        if (currentPublishPacketId == 0) {
+            // Only non-zero packet ids are allowed according to spec
+            currentPublishPacketId = 1;
+        }
+        return currentId;
     }
 
     public State getState() {
