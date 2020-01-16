@@ -168,6 +168,14 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         final var connAck = new ConnAck(ConnAck.ConnectReasonCode.SUCCESS, sessionPresent, Optional.ofNullable(assignedClientId));
         mqttChannel.sendPacket(connAck);
         System.out.println("Sent CONNACK");
+
+        if (sessionPresent) {
+            System.out.println("Detected existing session for " + session.getId());
+            session.reactivate(getActor());
+            // If there are available stored QoS1 messages for this session, start sending them
+            System.out.println("Sending stored QoS1 messages if available");
+            readAndSendQoS1MessagesIfAvailable();
+        }
     }
 
     /**
@@ -254,7 +262,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private void handleChannelDisconnected(final ChannelDisconnectedEvent event) {
         // channel can get disconnected even before we have an actual session
         if (session != null) {
-            System.out.println("Deactivating session");
+            System.out.println("Deactivating session " + session.getId());
             session.onDisconnect();
         }
     }

@@ -1,6 +1,5 @@
 package com.github.juggernaut.macchar.session;
 
-import com.github.juggernaut.macchar.Actor;
 import com.github.juggernaut.macchar.fsm.events.QoS1PublishMatchedEvent;
 import com.github.juggernaut.macchar.fsm.events.SendQoS0PublishEvent;
 import com.github.juggernaut.macchar.packet.Publish;
@@ -25,9 +24,9 @@ public class SessionSubscription implements SubscriptionListener {
     private final Subscribe.Subscription subscription;
 
     /**
-     * The MQTT actor for the channel that has made this subscription
+     * The MQTT session
      */
-    private final Actor actor;
+    private final Session session;
 
     /**
      * The global subscription state associated with this filter
@@ -39,31 +38,31 @@ public class SessionSubscription implements SubscriptionListener {
      */
     private final Cursor cursor;
 
-    private SessionSubscription(Optional<Integer> subscriptionIdentifier, Subscribe.Subscription subscription, Actor actor,
+    private SessionSubscription(Optional<Integer> subscriptionIdentifier, Subscribe.Subscription subscription, Session session,
                                 final SubscriptionState subscriptionState, Cursor cursor) {
         this.subscriptionIdentifier = subscriptionIdentifier;
         this.subscription = subscription;
-        this.actor = actor;
+        this.session = session;
         this.subscriptionState = subscriptionState;
         this.cursor = cursor;
     }
 
     public static SessionSubscription from(Subscribe.Subscription subscription, Optional<Integer> subscriptionIdentifier,
-                                           final Actor actor, final SubscriptionState subscriptionState) {
+                                           final Session session, final SubscriptionState subscriptionState) {
         final var cursor = subscriptionState.newCursor();
-        final var sessionSubscription = new SessionSubscription(subscriptionIdentifier, subscription, actor, subscriptionState, cursor);
+        final var sessionSubscription = new SessionSubscription(subscriptionIdentifier, subscription, session, subscriptionState, cursor);
         subscriptionState.addListener(sessionSubscription);
         return sessionSubscription;
     }
 
     @Override
     public void onMatchedQoS0Message(Publish msg) {
-        actor.sendMessage(new SendQoS0PublishEvent(msg));
+        session.getActor().sendMessage(new SendQoS0PublishEvent(msg));
     }
 
     @Override
     public void onMatchedQoS1Message() {
-        actor.sendMessage(new QoS1PublishMatchedEvent());
+        session.getActor().sendMessage(new QoS1PublishMatchedEvent());
     }
 
     public void readQoS1Messages(final List<Publish> messages, final int maxMessages) {
@@ -72,6 +71,14 @@ public class SessionSubscription implements SubscriptionListener {
 
     public void deactivate() {
         subscriptionState.removeListener(this);
+    }
+
+    public void delete() {
         subscriptionState.deleteCursor(cursor);
+    }
+
+    public void reactivate() {
+        subscriptionState.addListener(this);
+        // TODO: handle an invalid cursor here
     }
 }

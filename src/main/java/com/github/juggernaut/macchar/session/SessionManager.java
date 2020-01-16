@@ -47,7 +47,7 @@ public class SessionManager {
     class DefaultSession implements Session {
 
         private final String id;
-        private final Actor actor;
+        private Actor actor;
         private long sessionExpiryInterval;
         // topic filter -> session subscription
         private final Map<String, SessionSubscription> sessionSubscriptions = new HashMap<>();
@@ -77,10 +77,12 @@ public class SessionManager {
         @Override
         public void onDisconnect() {
             connected = false;
-            // TODO: handle non-zero session expiry interval
             if (sessionExpiryInterval == 0) {
                 expired = true;
                 remove();
+            } else {
+                // Just deactivate for now, we'll reactivate them if the clientId connects again
+                deactivateSubscriptions();
             }
         }
 
@@ -89,8 +91,17 @@ public class SessionManager {
             if (isConnected()) {
                 throw new IllegalStateException("Cannot remove a session while it is actively connected");
             }
-            sessionSubscriptions.values().forEach(SessionSubscription::deactivate);
+            deactivateSubscriptions();
+            deleteSubscriptions();
             removeSession(id);
+        }
+
+        private void deactivateSubscriptions() {
+            sessionSubscriptions.values().forEach(SessionSubscription::deactivate);
+        }
+
+        private void deleteSubscriptions() {
+            sessionSubscriptions.values().forEach(SessionSubscription::delete);
         }
 
         @Override
@@ -105,7 +116,6 @@ public class SessionManager {
 
         @Override
         public void onSubscribe(Subscribe subscribe) {
-            System.out.println("on subscribe called..");
             // TODO: we're only handling new subscriptions here, need to handle existing subscriptions according to
             // TODO: [MQTT-3.8.4-3]
             subscribe.getSubscriptions().stream()
@@ -114,7 +124,7 @@ public class SessionManager {
                         final var subscriptionState = subscriptionManager.getOrCreateSubscription(subscription.getFilter());
                         final var sessionSubscription = SessionSubscription.from(subscription,
                                 subscribe.getProperties().getSubscriptionIdentifier().map(SubscriptionIdentifier::getValue),
-                                actor,
+                                this,
                                 subscriptionState);
                         sessionSubscriptions.put(subscription.getFilter(), sessionSubscription);
                         System.out.println("Added session subscription for filter " + subscription.getFilter());
@@ -143,8 +153,18 @@ public class SessionManager {
             }
             return messages;
         }
+
+        @Override
+        public void reactivate(Actor actor) {
+            System.out.println("Reactivating session " + id);
+            this.actor = actor;
+            sessionSubscriptions.values().forEach(SessionSubscription::reactivate);
+        }
+
+        @Override
+        public Actor getActor() {
+            return actor;
+        }
     }
-
-
 
 }
