@@ -301,7 +301,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         if (availableMessages.size() > 0) {
             earliestOutstandingPacketId = currentPublishPacketId;
             availableMessages.stream()
-                    .map(m -> Publish.create(QoS.AT_LEAST_ONCE, false, false, m.getTopicName(), Optional.of(incrementPublishPacketId()), m.getPayload()))
+                    .map(m -> Publish.create(QoS.AT_LEAST_ONCE, false, false, m.getTopicName(), Optional.of(incrementPublishPacketId()), m.getPayload().slice()))
                     .forEach(publish -> mqttChannel.sendPacket(publish));
             outstandingQoS1Messages += availableMessages.size();
         }
