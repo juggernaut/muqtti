@@ -56,7 +56,7 @@ public class MqttDecoder {
                         remainingPacketBuffer = ByteBuffer.allocate(remainingLength);
                         state = State.READING_REMAINING_PACKET;
                     } else {
-                        // TODO: check if remaining length of 0 is valid for this packet type
+                        decodeZeroRemainingLengthPacket();
                         state = State.INIT;
                     }
                 }
@@ -109,6 +109,18 @@ public class MqttDecoder {
         }
         if (packetConsumer != null) {
             packetConsumer.accept(packet);
+        }
+    }
+
+    private void decodeZeroRemainingLengthPacket() {
+        if (packetType != MqttPacket.PacketType.PINGREQ) {
+            throw new IllegalArgumentException("Cannot have zero remaining length packet other than PINGREQ");
+        }
+        if (flags != 0) {
+            throw new IllegalArgumentException("Non-zero flags in PINGREQ packet");
+        }
+        if (packetConsumer != null) {
+            packetConsumer.accept(PingReq.INSTANCE);
         }
     }
 }

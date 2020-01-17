@@ -39,6 +39,10 @@ public abstract class MqttPacket {
             return Arrays.stream(values()).filter(v -> v.intValue == input).findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Invalid value " + input + " for packet type"));
         }
+
+        public int getIntValue() {
+            return intValue;
+        }
     }
 
     private final PacketType packetType;

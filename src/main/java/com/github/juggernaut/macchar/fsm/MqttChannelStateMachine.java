@@ -85,6 +85,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isPublish, this::handlePublishReceived),
             transition(ESTABLISHED, ESTABLISHED, QoS1PublishMatchedEvent.class, p -> true, this::handleQoS1PublishMatched),
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isPubAck, this::handlePubAckReceived),
+            transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isPingReq, this::handlePingReq),
             transition(ESTABLISHED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, this::handleChannelDisconnected),
             transition(ESTABLISHED, DISCONNECTED, SendDisconnectEvent.class, p -> true, this::handleSendDisconnected),
             transition(DISCONNECTED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, p -> {})
@@ -148,6 +149,10 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     private boolean isPubAck(final PacketReceivedEvent event) {
         return event.getPacket().getPacketType() == MqttPacket.PacketType.PUBACK;
+    }
+
+    private boolean isPingReq(final PacketReceivedEvent event) {
+        return event.getPacket().getPacketType() == MqttPacket.PacketType.PINGREQ;
     }
 
     private void handleConnect(final PacketReceivedEvent event) {
@@ -339,6 +344,10 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             currentPublishPacketId = 1;
         }
         return currentId;
+    }
+
+    private void handlePingReq(final PacketReceivedEvent event) {
+        mqttChannel.sendPacket(PingResp.INSTANCE);
     }
 
     public State getState() {
