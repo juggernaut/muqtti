@@ -5,6 +5,7 @@ import com.github.juggernaut.macchar.Configuration;
 import com.github.juggernaut.macchar.property.AssignedClientIdentifier;
 import com.github.juggernaut.macchar.property.MaximumQoS;
 import com.github.juggernaut.macchar.property.MqttProperty;
+import com.github.juggernaut.macchar.property.ServerKeepAlive;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -36,20 +37,24 @@ public class ConnAck extends MqttPacket {
     private final ConnectReasonCode connectReasonCode;
     private final boolean sessionPresent;
     private final Optional<String> assignedClientId;
+    private final Optional<Integer> keepAlive;
     private final List<MqttProperty> properties = new ArrayList<>();
 
 
-    public ConnAck(ConnectReasonCode connectReasonCode, boolean sessionPresent, Optional<String> assignedClientId) {
+    public ConnAck(ConnectReasonCode connectReasonCode, boolean sessionPresent,
+                   Optional<String> assignedClientId, Optional<Integer> keepAlive) {
         super(PacketType.CONNACK, 0); // flags is reserved = 0
         this.connectReasonCode = connectReasonCode;
         this.sessionPresent = sessionPresent;
         this.assignedClientId = assignedClientId;
+        this.keepAlive = keepAlive;
         populateProperties();
     }
 
     private void populateProperties() {
         properties.add(new MaximumQoS(Configuration.MAX_SUPPORTED_QOS));
         assignedClientId.map(AssignedClientIdentifier::new).ifPresent(properties::add);
+        keepAlive.map(ServerKeepAlive::new).ifPresent(properties::add);
     }
 
     public void encodeVariableHeader(final ByteBuffer buffer) {

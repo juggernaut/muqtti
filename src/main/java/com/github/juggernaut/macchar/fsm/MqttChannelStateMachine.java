@@ -165,12 +165,21 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             assignedClientId = "auto-" + UUID.randomUUID().toString();
         }
         final String effectiveClientId = clientId.isEmpty() ? assignedClientId : clientId;
-        final long sessionExpiryInterval = connect.getConnectProperties()
-                .map(ConnectProperties::getSessionExpiryInterval)
-                // 3.1.2.11.2: If the Session Expiry Interval is absent the value 0 is used
-                .orElse(0L);
         final boolean sessionPresent = getOrCreateSession(effectiveClientId, connect);
-        final var connAck = new ConnAck(ConnAck.ConnectReasonCode.SUCCESS, sessionPresent, Optional.ofNullable(assignedClientId));
+        final Optional<Integer> keepAliveProperty;
+        final int keepAliveInSeconds;
+
+        if (connect.getKeepAlive() > Configuration.MAX_KEEP_ALIVE) {
+            keepAliveInSeconds = Configuration.MAX_KEEP_ALIVE;
+            keepAliveProperty = Optional.of(Configuration.MAX_KEEP_ALIVE);
+        } else {
+            keepAliveInSeconds = connect.getKeepAlive();
+            keepAliveProperty = Optional.empty();
+        }
+
+        mqttChannel.setKeepAliveTimeout(keepAliveInSeconds);
+
+        final var connAck = new ConnAck(ConnAck.ConnectReasonCode.SUCCESS, sessionPresent, Optional.ofNullable(assignedClientId), keepAliveProperty);
         mqttChannel.sendPacket(connAck);
         System.out.println("Sent CONNACK");
 

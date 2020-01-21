@@ -8,6 +8,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -18,6 +22,11 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
     private final SocketChannel socketChannel;
     private final MqttDecoder mqttDecoder;
     private final Actor mqttChannelActor;
+
+    // TODO: better timeouts using a timer wheel
+    private static final ScheduledExecutorService timerService = Executors.newSingleThreadScheduledExecutor();
+    private volatile ScheduledFuture<?> timerFuture;
+    private volatile long keepAliveTimeout = -1;
 
     protected MqttChannel(SocketChannel socketChannel, MqttDecoder mqttDecoder, Actor mqttChannelActor) {
         this.socketChannel = Objects.requireNonNull(socketChannel);
@@ -34,12 +43,40 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
 
     @Override
     public void onRead(ByteBuffer buffer) {
+        updateTimer();
         try {
             mqttDecoder.onRead(buffer);
         } catch (IllegalArgumentException e) {
             System.err.println("Failed to parse MQTT packet: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private void updateTimer() {
+        if (timerFuture != null) {
+            timerFuture.cancel(false);
+            scheduleKeepAliveTimeout();
+        }
+    }
+
+    private void scheduleKeepAliveTimeout() {
+        timerFuture = timerService.schedule(() -> {
+            System.out.println("Disconnecting channel because keepalive timeout expired");
+            try {
+                socketChannel.close();
+            } catch (IOException e) {
+                // TODO: log warn here
+                e.printStackTrace();
+            }
+        }, keepAliveTimeout, TimeUnit.SECONDS);
+    }
+
+    public void setKeepAliveTimeout(final long timeout) {
+        assert timeout > 0 && timeout <= 600;
+        // Can only be set once (during CONNECT handshake)
+        assert keepAliveTimeout == -1 && timerFuture == null;
+        keepAliveTimeout = timeout;
+        scheduleKeepAliveTimeout();
     }
 
     @Override
