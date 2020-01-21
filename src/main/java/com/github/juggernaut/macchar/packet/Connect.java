@@ -3,6 +3,7 @@ package com.github.juggernaut.macchar.packet;
 import com.github.juggernaut.macchar.ByteBufferUtil;
 import com.github.juggernaut.macchar.QoS;
 import com.github.juggernaut.macchar.VariableByteIntegerDecoder;
+import com.github.juggernaut.macchar.property.PropertiesDecoder;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -28,8 +29,9 @@ public class Connect extends MqttPacket {
     private final String userName;
     private final byte[] password;
     private final QoS willQos;
+    private final WillData willData;
 
-    public Connect(int flags, int keepAlive, byte connectFlags, ConnectProperties connectProperties, String clientId, String userName, byte[] password, QoS willQos) {
+    public Connect(int flags, int keepAlive, byte connectFlags, ConnectProperties connectProperties, String clientId, String userName, byte[] password, QoS willQos, WillData willData) {
         super(PacketType.CONNECT, flags);
         this.keepAlive = keepAlive;
         this.connectFlags = connectFlags;
@@ -38,6 +40,7 @@ public class Connect extends MqttPacket {
         this.userName = userName;
         this.password = password;
         this.willQos = willQos;
+        this.willData = willData;
     }
 
     public static Connect fromBuffer(final int flags, final ByteBuffer buffer) {
@@ -47,6 +50,7 @@ public class Connect extends MqttPacket {
         validateProtocolVersion(buffer);
         final byte connectFlags = decodeConnectFlags(buffer);
         final QoS willQoS = decodeWillQoS(connectFlags);
+        validateConnectFlags(connectFlags, willQoS);
         final int keepAlive = decodeKeepAlive(buffer);
         final int propertyLength = decodePropertyLength(buffer);
         if (propertyLength > buffer.remaining()) {
@@ -68,15 +72,16 @@ public class Connect extends MqttPacket {
         // Payload
         // TODO: length checks
         final String clientId = decodeClientId(buffer);
+        WillData willData = null;
         if (hasWillFlag(connectFlags)) {
-            throw new IllegalArgumentException("Will flag and properties not implemented yet!");
+            willData = decodeWillData(buffer, willQoS);
         }
         final String userName = decodeUsername(buffer, connectFlags);
         final byte[] password = decodePassword(buffer, connectFlags);
         if (buffer.hasRemaining()) {
             throw new IllegalArgumentException("Extraneous length in buffer for CONNECT packet");
         }
-        return new Connect(flags, keepAlive, connectFlags, connectProperties, clientId, userName, password, willQoS);
+        return new Connect(flags, keepAlive, connectFlags, connectProperties, clientId, userName, password, willQoS, willData);
     }
 
     private static byte[] decodePassword(ByteBuffer buffer, byte connectFlags) {
@@ -124,11 +129,21 @@ public class Connect extends MqttPacket {
         if (willQos > 2) {
             throw new IllegalArgumentException("Will QoS must be 0, 1 or 2");
         }
+        // TODO: reject CONNECT if Will QoS = 2 because we don't support it
+
+        return QoS.fromIntValue(willQos);
+    }
+
+    private static void validateConnectFlags(byte connectFlags, QoS willQos) {
         // If the Will Flag is set to 0, then the Will QoS MUST be set to 0 (0x00) [MQTT-3.1.2-11]
-        if (!hasWillFlag(connectFlags) && willQos != 0) {
+        if (!hasWillFlag(connectFlags) && willQos != QoS.AT_MOST_ONCE) {
             throw new IllegalArgumentException("Will QoS must be 0 if the Will Flag is not set");
         }
-        return QoS.fromIntValue(willQos);
+
+        // If the Will Flag is set to 0, then Will Retain MUST be set to 0 [MQTT-3.1.2-13]
+        if (!hasWillFlag(connectFlags) && hasWillRetainFlag(connectFlags)) {
+            throw new IllegalArgumentException("If the Will Flag is set to 0, then Will Retain MUST be set to 0");
+        }
     }
 
     private static int decodeKeepAlive(ByteBuffer buffer) {
@@ -156,6 +171,14 @@ public class Connect extends MqttPacket {
         return null;
     }
 
+    private static WillData decodeWillData(ByteBuffer buffer, QoS willQos) {
+        final var genericWillProperties = PropertiesDecoder.decode(buffer);
+        final var willProperties = WillProperties.fromGenericProperties(genericWillProperties);
+        final String willTopic = ByteBufferUtil.decodeUTF8String(buffer);
+        final ByteBuffer willPayload = ByteBufferUtil.extractBinaryDataAsByteBuffer(buffer);
+        return new WillData(willQos, willProperties, willTopic, willPayload);
+    }
+
     private static boolean hasCleanStartFlag(final byte flags) {
         return ((flags >> CLEAN_START) & 0x01) == 1;
     }
@@ -170,6 +193,10 @@ public class Connect extends MqttPacket {
 
     private static boolean hasPasswordFlag(final byte flags) {
         return ((flags >> PASSWORD_FLAG) & 0x01) == 1;
+    }
+
+    private static boolean hasWillRetainFlag(final byte flags) {
+        return ((flags >> WILL_RETAIN) & 0x01) == 1;
     }
 
     public int getKeepAlive() {
@@ -230,5 +257,9 @@ public class Connect extends MqttPacket {
     @Override
     protected ByteBuffer encodePayload() {
         throw new UnsupportedOperationException("not implemented");
+    }
+
+    public Optional<WillData> getWillData() {
+        return Optional.ofNullable(willData);
     }
 }

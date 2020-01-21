@@ -70,6 +70,21 @@ public class ByteBufferUtil {
         return binaryData;
     }
 
+    public static ByteBuffer extractBinaryDataAsByteBuffer(final ByteBuffer buf) {
+        int binaryDataLen = decodeTwoByteInteger(buf);
+        if (binaryDataLen == 0) {
+            // This is allowed according to spec
+            return ByteBuffer.allocate(0);
+        }
+        if (buf.remaining() < binaryDataLen) {
+            throw new IllegalArgumentException("Less data available in bytebuffer than length indicate in binary data prefix");
+        }
+        final ByteBuffer sliced = buf.slice();
+        sliced.limit(binaryDataLen);
+        buf.position(buf.position() + binaryDataLen);
+        return sliced;
+    }
+
     public static void encodeBinaryData(final ByteBuffer buf, final byte[] value) {
         assert value.length <= 65535;
         encodeTwoByteInteger(buf, value.length);
