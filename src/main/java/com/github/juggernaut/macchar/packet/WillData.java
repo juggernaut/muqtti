@@ -20,4 +20,20 @@ public class WillData {
         this.willTopic = willTopic;
         this.willPayload = willPayload;
     }
+
+    public QoS getWillQoS() {
+        return willQoS;
+    }
+
+    public WillProperties getWillProperties() {
+        return willProperties;
+    }
+
+    public String getWillTopic() {
+        return willTopic;
+    }
+
+    public ByteBuffer getWillPayload() {
+        return willPayload;
+    }
 }

@@ -177,7 +177,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             keepAliveProperty = Optional.empty();
         }
 
-        mqttChannel.setKeepAliveTimeout(keepAliveInSeconds);
+        mqttChannel.setKeepAliveTimeout((int) (keepAliveInSeconds * 1.5));
 
         final var connAck = new ConnAck(ConnAck.ConnectReasonCode.SUCCESS, sessionPresent, Optional.ofNullable(assignedClientId), keepAliveProperty);
         mqttChannel.sendPacket(connAck);
