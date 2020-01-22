@@ -208,8 +208,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         if (oldSession != null) {
             if (oldSession.isConnected()) {
                 // If the ClientID represents a Client already connected to the Server, the Server sends a DISCONNECT packet to the existing Client with Reason Code of 0x8E (Session taken over) as described in section 4.13 and MUST close the Network Connection of the existing Client [MQTT-3.1.4-3]
-                // TODO: Will message
-                oldSession.sendDisconnect(Disconnect.create(ReasonCode.SESSION_TAKEN_OVER));
+                oldSession.sendDisconnect(Disconnect.create(ReasonCode.SESSION_TAKEN_OVER), Session.DisconnectCause.SERVER_INITIATED);
                 newSessionRequired = oldSession.isExpired();
             }
             if (connect.hasCleanStartFlag()) {
@@ -223,7 +222,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         }
 
         if (newSessionRequired) {
-            session = sessionManager.newSession(effectiveClientId, getActor(), sessionExpiryInterval);
+            session = sessionManager.newSession(effectiveClientId, getActor(), sessionExpiryInterval, connect.getWillData());
         } else {
             session = oldSession;
         }
@@ -276,8 +275,8 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private void handleChannelDisconnected(final ChannelDisconnectedEvent event) {
         // channel can get disconnected even before we have an actual session
         if (session != null) {
-            System.out.println("Deactivating session " + session.getId());
-            session.onDisconnect();
+            System.out.println("Session " + session.getId() + " disconnected unceremoniously");
+            session.onDisconnect(Session.DisconnectCause.UNCEREMONIOUS);
         }
     }
 

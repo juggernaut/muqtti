@@ -12,6 +12,14 @@ import java.util.List;
  */
 public interface Session {
 
+    enum DisconnectCause {
+        NORMAL_CLIENT_INITIATED,
+        ABNORMAL_CLIENT_INITIATED,
+        SERVER_INITIATED,
+        UNCEREMONIOUS,
+        KEEP_ALIVE_TIMED_OUT
+    }
+
     /**
      * This is really the same as the client identifier
      * @return
@@ -22,13 +30,13 @@ public interface Session {
 
     boolean isConnected();
 
-    void onDisconnect();
+    void onDisconnect(DisconnectCause cause);
 
     void onSubscribe(Subscribe subscribeMsg);
 
     void onPublish(Publish publishMsg);
 
-    void sendDisconnect(Disconnect disconnect);
+    void sendDisconnect(Disconnect disconnect, DisconnectCause cause);
 
     void remove();
 

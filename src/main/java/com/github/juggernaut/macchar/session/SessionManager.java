@@ -6,14 +6,12 @@ import com.github.juggernaut.macchar.fsm.events.SendDisconnectEvent;
 import com.github.juggernaut.macchar.packet.Disconnect;
 import com.github.juggernaut.macchar.packet.Publish;
 import com.github.juggernaut.macchar.packet.Subscribe;
+import com.github.juggernaut.macchar.packet.WillData;
 import com.github.juggernaut.macchar.property.SubscriptionIdentifier;
+import com.github.juggernaut.macchar.property.types.FourByteIntegerProperty;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * @author ameya
@@ -23,12 +21,14 @@ public class SessionManager {
     private final ConcurrentMap<String, Session> sessionMap = new ConcurrentHashMap<>();
     private final SubscriptionManager subscriptionManager;
 
+    private static final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+
     public SessionManager(SubscriptionManager subscriptionManager) {
         this.subscriptionManager = subscriptionManager;
     }
 
-    public Session newSession(final String id, final Actor actor, long sessionExpiryInterval)  {
-        final var candidateSession = new DefaultSession(id, actor, sessionExpiryInterval);
+    public Session newSession(final String id, final Actor actor, long sessionExpiryInterval, Optional<WillData> willData)  {
+        final var candidateSession = new DefaultSession(id, actor, sessionExpiryInterval, willData);
         final var oldSessoin = sessionMap.putIfAbsent(id, candidateSession);
         if (oldSessoin != null) {
             throw new SessionIdAlreadyExists("Session id " + id + " already exists");
@@ -50,17 +50,22 @@ public class SessionManager {
         private final String id;
         private Actor actor;
         private long sessionExpiryInterval;
+        private Optional<WillData> willData;
         // topic filter -> session subscription
         private final Map<String, SessionSubscription> sessionSubscriptions = new HashMap<>();
+
+        private Future<?> sessionExpiryTask;
+        private Future<?> willExpiryTask;
 
         private volatile boolean connected;
 
         private volatile boolean expired;
 
-        DefaultSession(String id, Actor actor, long sessionExpiryInterval) {
+        DefaultSession(String id, Actor actor, long sessionExpiryInterval, Optional<WillData> willData) {
             this.id = id;
             this.actor = actor;
             this.sessionExpiryInterval = sessionExpiryInterval;
+            this.willData = willData;
             connected = true;
             expired = false;
         }
@@ -76,15 +81,50 @@ public class SessionManager {
         }
 
         @Override
-        public void onDisconnect() {
+        public void onDisconnect(DisconnectCause cause) {
             connected = false;
+            // Remove will message first, because if session is to be expired right away, we need to remove the will message
+            // to avoid erroneous Will message sending
+            if (cause == DisconnectCause.NORMAL_CLIENT_INITIATED) {
+                // The Will Message MUST be removed from the stored Session State in the Server once it has been published or the Server has received a DISCONNECT packet with a Reason Code of 0x00 (Normal disconnection) from the Client [MQTT-3.1.2-10]
+                willData = Optional.empty();
+            }
             if (sessionExpiryInterval == 0) {
-                expired = true;
-                remove();
+                onSessionExpiry();
             } else {
                 // Just deactivate for now, we'll reactivate them if the clientId connects again
                 deactivateSubscriptions();
+                sessionExpiryTask = scheduledExecutorService.schedule(this::onSessionExpiry, sessionExpiryInterval, TimeUnit.SECONDS);
             }
+            if (cause != DisconnectCause.NORMAL_CLIENT_INITIATED) {
+                willData.ifPresent(wd -> {
+                    final long willDelayInterval = wd.getWillProperties().getWillDelayInterval()
+                            .map(FourByteIntegerProperty::getValue).orElse(0L);
+                    // if session expiry is less than or equal to will delay, that will take care of the Will message, no need to set any timer
+                    // here. Otherwise, if the will delay is less than session expiry, then we need to schedule the timer
+                    if (willDelayInterval < sessionExpiryInterval) {
+                        willExpiryTask = scheduledExecutorService.schedule(this::publishWillMessageIfPresent, willDelayInterval, TimeUnit.SECONDS);
+                    }
+                });
+            }
+        }
+
+        private synchronized void publishWillMessageIfPresent() {
+            willData.ifPresent(wd -> {
+                // TODO: check that will retain is false (since retain is not supported)
+                final Publish willPublishMsg = Publish.create(wd.getWillQoS(), false, false, wd.getWillTopic(),
+                        Optional.of(1), wd.getWillPayload()); // packetId doesn't really matter here since outgoing publish will get their own packet ids
+                // fake that a publish has been received
+                subscriptionManager.onPublishReceived(willPublishMsg);
+                willData = Optional.empty();
+            });
+        }
+
+        // Synchronized because the session could be reactivated at the same time as the expiry is triggered
+        private synchronized void onSessionExpiry() {
+            expired = true;
+            remove();
+            publishWillMessageIfPresent();
         }
 
         @Override
@@ -133,11 +173,11 @@ public class SessionManager {
         }
 
         @Override
-        public void sendDisconnect(Disconnect disconnect) {
+        public void sendDisconnect(Disconnect disconnect, DisconnectCause cause) {
             actor.sendMessage(new SendDisconnectEvent(disconnect));
             // Do this here, don't wait for the socket to be disconnected because the caller needs to know if
             // the session expired
-            onDisconnect();
+            onDisconnect(cause);
         }
 
         @Override
@@ -159,8 +199,20 @@ public class SessionManager {
         }
 
         @Override
-        public void reactivate(Actor actor) {
+        public synchronized void reactivate(Actor actor) {
+            if (expired) {
+                throw new IllegalStateException("Cannot reactivate expired session");
+            }
             System.out.println("Reactivating session " + id);
+            if (sessionExpiryTask != null) {
+                sessionExpiryTask.cancel(true);
+                sessionExpiryTask = null;
+            }
+            // If a new Network Connection to this Session is made before the Will Delay Interval has passed, the Server MUST NOT send the Will Message [MQTT-3.1.3-9]
+            if (willExpiryTask != null) {
+                willExpiryTask.cancel(true);
+                willExpiryTask = null;
+            }
             this.actor = actor;
             sessionSubscriptions.values().forEach(SessionSubscription::reactivate);
         }

@@ -31,4 +31,8 @@ public abstract class FourByteIntegerProperty extends MqttProperty {
     protected static long decodeValue(ByteBuffer buffer) {
         return ByteBufferUtil.decodeFourByteInteger(buffer);
     }
+
+    public long getValue() {
+        return value;
+    }
 }
