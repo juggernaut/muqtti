@@ -78,6 +78,9 @@ public class PropertiesDecoder {
                     // 3.1.2.11.8: The User Property is allowed to appear multiple times to represent multiple name, value pairs. The same name is allowed to appear more than once
                     properties.add(UserProperty.fromBuffer(buffer));
                     break;
+                case WILL_DELAY_INTERVAL:
+                    properties.add(WillDelayInterval.fromBuffer(buffer));
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknown property identifier " + propertyIdentifier);
             }
