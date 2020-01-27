@@ -17,22 +17,23 @@ import java.util.function.Function;
  */
 public class MqttServer {
 
-    private static final int PORT = 1883;
+    private final int port;
 
     private final Function<SocketChannel, ChannelListener> channelListenerFactory;
 
     // TODO: figure out optimal size of buffer
     private final ByteBuffer readBuffer = ByteBuffer.allocate(64 * 1024);
 
-    public MqttServer(Function<SocketChannel, ChannelListener> channelListenerFactory) {
+    public MqttServer(Function<SocketChannel, ChannelListener> channelListenerFactory, final int port) {
         this.channelListenerFactory = Objects.requireNonNull(channelListenerFactory);
+        this.port = port;
     }
 
     public void start() throws IOException {
         final var serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.configureBlocking(false);
         // There is probably a race condition here between the bind and registration
-        serverSocketChannel.bind(new InetSocketAddress(PORT));
+        serverSocketChannel.bind(new InetSocketAddress(port));
 
         final var selector = Selector.open();
         final var key = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -66,11 +67,6 @@ public class MqttServer {
                         }
                         while (numberReadBytes > 0) {
                             readBuffer.flip();
-                            /*
-                            while (readBuffer.hasRemaining()) {
-                                socketChannel.write(readBuffer);
-                            }
-                            */
                             // It is expected that all of the buffer is read by the listener
                             channelListener.onRead(readBuffer);
                             if (readBuffer.hasRemaining()) {

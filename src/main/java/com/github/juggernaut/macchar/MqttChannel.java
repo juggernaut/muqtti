@@ -19,7 +19,7 @@ import java.util.function.Consumer;
  */
 public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
 
-    private final SocketChannel socketChannel;
+    protected final SocketChannel socketChannel;
     private final MqttDecoder mqttDecoder;
     private final Actor mqttChannelActor;
 
