@@ -31,6 +31,8 @@ public class MqttChannelFactory implements Function<SocketChannel, ChannelListen
                 .map(ctx -> {
                     final var sslEngine = ctx.createSSLEngine();
                     sslEngine.setUseClientMode(false);
+                    // TODO: tmp
+                    sslEngine.setEnabledProtocols(new String[] {"TLSv1.1"});
                     return (MqttChannel) MqttTlsChannel.create(socketChannel, actor, sslEngine);
                 })
                 .orElseGet(() -> MqttChannel.create(socketChannel, actor));

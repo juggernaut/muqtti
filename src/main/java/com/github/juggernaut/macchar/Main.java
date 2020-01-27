@@ -49,7 +49,9 @@ public class Main {
         final var kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(ks, null);
 
-        final var sslContext = SSLContext.getInstance("TLS");
+        //final var sslContext = SSLContext.getInstance("TLS");
+        // TODO: tmp
+        final var sslContext = SSLContext.getInstance("TLSv1.1");
         sslContext.init(kmf.getKeyManagers(), null, null);
         return Optional.of(sslContext);
     }
