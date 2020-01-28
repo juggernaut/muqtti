@@ -17,6 +17,9 @@ public class MqttChannelFactory implements Function<SocketChannel, ChannelListen
     private final SessionManager sessionManager;
     private final Optional<SSLContext> sslContext;
 
+    // NOTE: not supporting TLSv1.3 yet..
+    private static final String[] ENABLED_PROTOCOLS = new String[] {"TLSv1.1", "TLSv1.2"};
+
     public MqttChannelFactory(ActorSystem actorSystem, SessionManager sessionManager, Optional<SSLContext> sslContext) {
         this.actorSystem = actorSystem;
         this.sessionManager = sessionManager;
@@ -31,8 +34,7 @@ public class MqttChannelFactory implements Function<SocketChannel, ChannelListen
                 .map(ctx -> {
                     final var sslEngine = ctx.createSSLEngine();
                     sslEngine.setUseClientMode(false);
-                    // TODO: tmp
-                    sslEngine.setEnabledProtocols(new String[] {"TLSv1.1"});
+                    sslEngine.setEnabledProtocols(ENABLED_PROTOCOLS);
                     return (MqttChannel) MqttTlsChannel.create(socketChannel, actor, sslEngine);
                 })
                 .orElseGet(() -> MqttChannel.create(socketChannel, actor));

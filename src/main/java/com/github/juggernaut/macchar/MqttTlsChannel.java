@@ -34,8 +34,6 @@ public class MqttTlsChannel extends MqttChannel {
 
     @Override
     public void onRead(ByteBuffer src) {
-        System.out.println("onRead TLS");
-        // TODO: It's unlikely that network buffer is larger if we size both correctly, but handle this case for now...
         if (src.remaining() > (cipherData.capacity() - cipherData.position())) {
             System.out.println("Enlarging cipherData");
             ByteBuffer b = ByteBuffer.allocate(src.remaining() + cipherData.position());
@@ -45,7 +43,6 @@ public class MqttTlsChannel extends MqttChannel {
         }
         cipherData.put(src);
         cipherData.flip();
-        System.out.println("cipher data has " + cipherData.remaining() + " bytes");
         doUnwrap();
     }
 
@@ -106,9 +103,6 @@ public class MqttTlsChannel extends MqttChannel {
                 runDelegatedTasks();
                 break;
             case NEED_UNWRAP:
-                // TODO: this is debug
-                System.out.println("Cipherdata has " + cipherData.remaining() + " bytes");
-                //System.out.println("Will wait for more TLS data");
                 if (cipherData.hasRemaining()) {
                     doUnwrap();
                 }
@@ -138,8 +132,6 @@ public class MqttTlsChannel extends MqttChannel {
                 outboundData.flip();
                 // TODO: handle partial writes
                 socketChannel.write(outboundData);
-                // TODO: debug
-                System.out.println("Wrote " + result.bytesProduced() + " bytes of TLS data to socket");
                 outboundData.compact();
             }
         } while (result.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_WRAP);
@@ -152,8 +144,6 @@ public class MqttTlsChannel extends MqttChannel {
         while ((runnable = sslEngine.getDelegatedTask()) != null) {
             runnable.run();
         }
-        // TODO: debug
-        System.out.println("finished running delegated tasks");
         handleHandshake(sslEngine.getHandshakeStatus());
     }
 
