@@ -86,6 +86,8 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             transition(ESTABLISHED, ESTABLISHED, QoS1PublishMatchedEvent.class, p -> true, this::handleQoS1PublishMatched),
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isPubAck, this::handlePubAckReceived),
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isPingReq, this::handlePingReq),
+            transition(INIT, INIT, ChannelWriteReadyEvent.class, p -> true, e -> mqttChannel.flushWriteBuffer()), // for TLS handshake
+            transition(ESTABLISHED, ESTABLISHED, ChannelWriteReadyEvent.class, p -> true, e -> mqttChannel.flushWriteBuffer()),
             transition(ESTABLISHED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, this::handleChannelDisconnected),
             transition(ESTABLISHED, DISCONNECTED, SendDisconnectEvent.class, p -> true, this::handleSendDisconnected),
             transition(DISCONNECTED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, p -> {})
@@ -293,7 +295,8 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     private void sendDisconnect(final Disconnect disconnect) {
         System.out.println("Sending DISCONNECT to " + session.getId());
-        mqttChannel.sendPacketAndDisconnect(disconnect);
+        mqttChannel.sendPacket(disconnect);
+        mqttChannel.disconnect();
     }
 
     private void handleQoS1PublishMatched(final QoS1PublishMatchedEvent event) {

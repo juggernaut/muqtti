@@ -19,12 +19,12 @@ public class MqttServer {
 
     private final int port;
 
-    private final Function<SocketChannel, ChannelListener> channelListenerFactory;
+    private final Function<SelectionKey, ChannelListener> channelListenerFactory;
 
     // TODO: figure out optimal size of buffer
     private final ByteBuffer readBuffer = ByteBuffer.allocate(64 * 1024);
 
-    public MqttServer(Function<SocketChannel, ChannelListener> channelListenerFactory, final int port) {
+    public MqttServer(Function<SelectionKey, ChannelListener> channelListenerFactory, final int port) {
         this.channelListenerFactory = Objects.requireNonNull(channelListenerFactory);
         this.port = port;
     }
@@ -44,13 +44,13 @@ public class MqttServer {
                 if (selectedKey.isAcceptable()) {
                     try {
                         final var newSocket = ((ServerSocketChannel) selectedKey.channel()).accept();
-                        if (newSocket != null) { // don't think this will ever happen, but defensive programming
+                        if (newSocket != null) { // don't think this will ever be null, but defensive programming
                             System.out.println("Accepted new connection from " + newSocket.getRemoteAddress());
                             newSocket.configureBlocking(false);
                             // Turn off nagle
                             newSocket.setOption(StandardSocketOptions.TCP_NODELAY, true);
                             final var newChannelKey = newSocket.register(selector, SelectionKey.OP_READ);
-                            final var channelListener = channelListenerFactory.apply(newSocket);
+                            final var channelListener = channelListenerFactory.apply(newChannelKey);
                             newChannelKey.attach(channelListener);
                         }
                     } catch (IOException e) {
@@ -78,6 +78,9 @@ public class MqttServer {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                } else if (selectedKey.isWritable()) {
+                    final var channelListener = (ChannelListener) selectedKey.attachment();
+                    channelListener.onWriteReady();
                 }
 
             }, 50);

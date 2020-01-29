@@ -4,14 +4,14 @@ import com.github.juggernaut.macchar.fsm.MqttChannelStateMachine;
 import com.github.juggernaut.macchar.session.SessionManager;
 
 import javax.net.ssl.SSLContext;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.SelectionKey;
 import java.util.Optional;
 import java.util.function.Function;
 
 /**
  * @author ameya
  */
-public class MqttChannelFactory implements Function<SocketChannel, ChannelListener> {
+public class MqttChannelFactory implements Function<SelectionKey, ChannelListener> {
 
     private final ActorSystem actorSystem;
     private final SessionManager sessionManager;
@@ -27,7 +27,7 @@ public class MqttChannelFactory implements Function<SocketChannel, ChannelListen
     }
 
     @Override
-    public ChannelListener apply(SocketChannel socketChannel) {
+    public ChannelListener apply(SelectionKey selectionKey) {
         final var fsm = new MqttChannelStateMachine(sessionManager);
         final var actor = actorSystem.createActor(fsm);
         final MqttChannel channel = sslContext
@@ -35,9 +35,9 @@ public class MqttChannelFactory implements Function<SocketChannel, ChannelListen
                     final var sslEngine = ctx.createSSLEngine();
                     sslEngine.setUseClientMode(false);
                     sslEngine.setEnabledProtocols(ENABLED_PROTOCOLS);
-                    return (MqttChannel) MqttTlsChannel.create(socketChannel, actor, sslEngine);
+                    return (MqttChannel) MqttTlsChannel.create(selectionKey, actor, sslEngine);
                 })
-                .orElseGet(() -> MqttChannel.create(socketChannel, actor));
+                .orElseGet(() -> MqttChannel.create(selectionKey, actor));
         fsm.setMqttChannel(channel);
         return channel;
     }
