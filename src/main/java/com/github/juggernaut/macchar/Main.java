@@ -3,8 +3,7 @@ package com.github.juggernaut.macchar;
 import com.github.juggernaut.macchar.session.SessionManager;
 import com.github.juggernaut.macchar.session.SubscriptionManager;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
+import javax.net.ssl.*;
 import java.io.*;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -16,12 +15,16 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 public class Main {
 
+    // NOTE: not supporting TLSv1.3 yet..
+    private static final String[] ENABLED_PROTOCOLS = new String[] {"TLSv1.1", "TLSv1.2"};
+
     public static void main(String[] args) throws Exception {
         final int port = Integer.getInteger("port", 1883);
-        final Optional<SSLContext> sslContext = getSSLContext();
+        final Optional<Supplier<SSLEngine>> sslContext = getSSLEngineSupplier();
         final var forkJoinPool = Executors.newWorkStealingPool();
         final var actorSystem = new ActorSystem(forkJoinPool);
         final var subscriptionManager = new SubscriptionManager();
@@ -30,7 +33,7 @@ public class Main {
         mqttServer.start();
     }
 
-    private static Optional<SSLContext> getSSLContext() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException, KeyStoreException, UnrecoverableKeyException, KeyManagementException {
+    private static Optional<Supplier<SSLEngine>> getSSLEngineSupplier() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException, KeyStoreException, UnrecoverableKeyException, KeyManagementException {
         final String certFile = System.getProperty("certfile");
         final String keyFile  = System.getProperty("keyfile");
 
@@ -42,18 +45,32 @@ public class Main {
             throw new IllegalArgumentException("Both certfile and keyfile must be specified");
         }
 
+        final var sslParams = new SSLParameters();
+        sslParams.setProtocols(ENABLED_PROTOCOLS);
+
         final var certChain = readCertChainFromFile(new File(certFile));
         final var privateKey = readPrivateKeyFromFile(new File(keyFile));
 
         final KeyStore ks = buildKeyStore(privateKey, certChain);
+
+        final String caFile = System.getProperty("cafile");
+        if (caFile != null) {
+            final var cacertChain = readCertChainFromFile(new File(caFile));
+            for (int i = 0; i < cacertChain.length; i++) {
+                ks.setCertificateEntry("cacertchain-" + i, cacertChain[i]);
+            }
+            sslParams.setNeedClientAuth(true);
+        }
+
         final var kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(ks, null);
 
-        //final var sslContext = SSLContext.getInstance("TLS");
-        // TODO: tmp
-        final var sslContext = SSLContext.getInstance("TLSv1.1");
-        sslContext.init(kmf.getKeyManagers(), null, null);
-        return Optional.of(sslContext);
+        final var tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(ks);
+
+        final var sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+        return Optional.of(new SSLEngineSupplier(sslContext, sslParams));
     }
 
     private static PrivateKey readPrivateKeyFromFile(File file) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
