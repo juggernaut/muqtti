@@ -6,34 +6,28 @@ import com.github.juggernaut.macchar.packet.Publish;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author ameya
  */
-public class SubscriptionState {
+public abstract class SubscriptionState {
 
 
-    private final SubscriptionId subscriptionId;
-    private final CircularBuffer<Publish> messageBuffer = new CircularBuffer<>(1024);
-    private final List<Cursor> cursors = new ArrayList<>();
-    private final List<SubscriptionListener> listeners = Collections.synchronizedList(new ArrayList<>());
+    protected final SubscriptionId subscriptionId;
+    protected final CircularBuffer<Publish> messageBuffer = new CircularBuffer<>(1024);
+    protected final List<SubscriptionListener> listeners = new CopyOnWriteArrayList<>();
 
-    public SubscriptionState(SubscriptionId subscriptionId) {
+    protected SubscriptionState(SubscriptionId subscriptionId) {
         this.subscriptionId = subscriptionId;
     }
 
-    public SubscriptionState() {
+    protected Cursor newCursor() {
+        return new Cursor(subscriptionId, messageBuffer.getPosition() - 1);
+    }
+
+    protected SubscriptionState() {
         this(new SubscriptionId());
-    }
-
-    public Cursor newCursor() {
-        final var cursor = new Cursor(subscriptionId, messageBuffer.getPosition() - 1);
-        cursors.add(cursor);
-        return cursor;
-    }
-
-    public void deleteCursor(Cursor cursor) {
-        cursors.remove(cursor);
     }
 
     public void addListener(final SubscriptionListener listener) {
@@ -52,19 +46,7 @@ public class SubscriptionState {
         }
     }
 
-    private void save(Publish msg) {
-        synchronized(this) {
-            final int newPos = messageBuffer.put(msg);
-            cursors.forEach(cursor -> {
-                // The write pos has wrapped around and bumped against our cursor, so invalidate it.
-                // TODO: this logic is wrong! (off by one error)
-                if (newPos == cursor.getPosition()) {
-                    cursor.invalidate();
-                }
-            });
-        }
-        fanoutQoS1(msg);
-    }
+    protected abstract void save(Publish msg);
 
     public synchronized void readQoS1Messages(Cursor cursor, int numMessages, List<Publish> messages) {
         assert numMessages > 0;
@@ -75,20 +57,9 @@ public class SubscriptionState {
         cursor.setPosition(readUntilPos);
     }
 
-    private void fanoutQoS0(Publish msg) {
-        listeners.forEach(listener -> listener.onMatchedQoS0Message(msg));
-    }
+    protected abstract void fanoutQoS0(Publish msg);
+    protected abstract void fanoutQoS1(Publish msg);
 
-    private void fanoutQoS1(Publish msg) {
-        listeners.forEach(listener -> {
-            // subscription is QoS0, so just send it directly
-            if (listener.getSubscriptionMaxQoS() == QoS.AT_MOST_ONCE) {
-                listener.onMatchedQoS0Message(msg);
-            } else {
-                listener.onMatchedQoS1Message();
-            }
-        });
-    }
 
     public SubscriptionId getSubscriptionId() {
         return subscriptionId;
