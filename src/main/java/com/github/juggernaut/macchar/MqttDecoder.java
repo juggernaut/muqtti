@@ -101,6 +101,9 @@ public class MqttDecoder {
             case PUBACK:
                 packet = PubAck.fromBuffer(flags, remainingPacketBuffer);
                 break;
+            case DISCONNECT:
+                packet = Disconnect.fromBuffer(flags, remainingPacketBuffer);
+                break;
             default:
                 throw new IllegalArgumentException("Decoding packet type " + packetType + " is not yet implemented");
         }
@@ -113,14 +116,19 @@ public class MqttDecoder {
     }
 
     private void decodeZeroRemainingLengthPacket() {
-        if (packetType != MqttPacket.PacketType.PINGREQ) {
-            throw new IllegalArgumentException("Cannot have zero remaining length packet other than PINGREQ");
-        }
-        if (flags != 0) {
-            throw new IllegalArgumentException("Non-zero flags in PINGREQ packet");
+        MqttPacket packet = null;
+        switch (packetType) {
+            case PINGREQ:
+                packet = PingReq.fromFixedHeaderOnly(flags);
+                break;
+            case DISCONNECT:
+                packet = Disconnect.fromFixedHeaderOnly(flags);
+                break;
+            default:
+                throw new IllegalArgumentException("Packet type " + packetType + " cannot have zero remaining length");
         }
         if (packetConsumer != null) {
-            packetConsumer.accept(PingReq.INSTANCE);
+            packetConsumer.accept(packet);
         }
     }
 }

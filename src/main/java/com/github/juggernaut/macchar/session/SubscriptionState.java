@@ -6,6 +6,7 @@ import com.github.juggernaut.macchar.packet.Publish;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author ameya
@@ -15,8 +16,8 @@ public class SubscriptionState {
 
     private final SubscriptionId subscriptionId;
     private final CircularBuffer<Publish> messageBuffer = new CircularBuffer<>(1024);
-    private final List<Cursor> cursors = new ArrayList<>();
-    private final List<SubscriptionListener> listeners = Collections.synchronizedList(new ArrayList<>());
+    private final List<Cursor> cursors = new CopyOnWriteArrayList<>();
+    private final List<SubscriptionListener> listeners = new CopyOnWriteArrayList<>();
 
     public SubscriptionState(SubscriptionId subscriptionId) {
         this.subscriptionId = subscriptionId;

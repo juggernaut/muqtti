@@ -18,7 +18,7 @@ public class DisconnectEncodingTest {
                 "02" + // remaining length
                 "8e" + // reason code
                 "00"; // property length
-        final var disconnect = Disconnect.create(ReasonCode.SESSION_TAKEN_OVER);
+        final var disconnect = Disconnect.create(Disconnect.ReasonCode.SESSION_TAKEN_OVER);
         final ByteBuffer[] encoded = disconnect.encode();
         assertEquals(1, encoded.length);
         assertEquals(expected, TestUtils.byteBufToHex(encoded[0]));

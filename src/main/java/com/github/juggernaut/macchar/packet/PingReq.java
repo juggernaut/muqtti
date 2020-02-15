@@ -13,6 +13,13 @@ public class PingReq extends MqttPacket {
         super(PacketType.PINGREQ, 0);
     }
 
+    public static PingReq fromFixedHeaderOnly(int flags) {
+        if (flags != 0) {
+            throw new IllegalArgumentException("PINGREQ flags must be 0");
+        }
+        return PingReq.INSTANCE;
+    }
+
     @Override
     protected int getEncodedVariableHeaderLength() {
         return 0;

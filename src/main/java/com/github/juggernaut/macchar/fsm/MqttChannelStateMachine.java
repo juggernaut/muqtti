@@ -210,7 +210,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         if (oldSession != null) {
             if (oldSession.isConnected()) {
                 // If the ClientID represents a Client already connected to the Server, the Server sends a DISCONNECT packet to the existing Client with Reason Code of 0x8E (Session taken over) as described in section 4.13 and MUST close the Network Connection of the existing Client [MQTT-3.1.4-3]
-                oldSession.sendDisconnect(Disconnect.create(ReasonCode.SESSION_TAKEN_OVER), Session.DisconnectCause.SERVER_INITIATED);
+                oldSession.sendDisconnect(Disconnect.create(Disconnect.ReasonCode.SESSION_TAKEN_OVER), Session.DisconnectCause.SERVER_INITIATED);
                 newSessionRequired = oldSession.isExpired();
             }
             if (connect.hasCleanStartFlag()) {
@@ -239,7 +239,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         // The QoS of Application Messages sent in response to a Subscription MUST be the minimum of the QoS of the originally published message and the Maximum QoS granted by the Server [MQTT-3.8.4-8]
         final var reasonCodes = subscribe.getSubscriptions().stream()
                 .map(subscription -> Math.min(Configuration.MAX_SUPPORTED_QOS.getIntValue(), subscription.getQoS().getIntValue()))
-                .map(ReasonCode::fromIntValue)
+                .map(SubAck.ReasonCode::fromIntValue)
                 .collect(Collectors.toList());
         final var subAck = new SubAck(subscribe.getPacketId(), reasonCodes);
         mqttChannel.sendPacket(subAck);
@@ -289,7 +289,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private void handleQoS2PublishReceived(final PacketReceivedEvent event) {
         assert isPublishQoS2(event);
         // [MQTT-3.2.2-11] It is a Protocol Error if the Server receives a PUBLISH packet with a QoS greater than the Maximum QoS it specified. In this case use DISCONNECT with Reason Code 0x9B (QoS not supported)
-        final var disconnect = Disconnect.create(ReasonCode.QOS_NOT_SUPPORTED);
+        final var disconnect = Disconnect.create(Disconnect.ReasonCode.QOS_NOT_SUPPORTED);
         sendDisconnect(disconnect);
     }
 

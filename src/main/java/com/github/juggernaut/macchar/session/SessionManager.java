@@ -167,7 +167,8 @@ public class SessionManager {
                                 subscribe.getProperties().getSubscriptionIdentifier().map(SubscriptionIdentifier::getValue),
                                 this,
                                 subscriptionState);
-                        sessionSubscriptions.put(subscription.getFilter(), sessionSubscription);
+                        // TODO: is there anything different to do here re: shared subscription?
+                        sessionSubscriptions.put(subscription.getFilter().getFilterString(), sessionSubscription);
                         System.out.println("Added session subscription for filter " + subscription.getFilter());
                     });
         }

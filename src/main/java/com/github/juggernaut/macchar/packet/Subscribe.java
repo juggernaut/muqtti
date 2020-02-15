@@ -2,6 +2,7 @@ package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.ByteBufferUtil;
 import com.github.juggernaut.macchar.QoS;
+import com.github.juggernaut.macchar.TopicFilter;
 import com.github.juggernaut.macchar.property.PropertiesDecoder;
 
 import java.nio.ByteBuffer;
@@ -14,15 +15,15 @@ import java.util.List;
 public class Subscribe extends MqttPacket {
 
     public static class Subscription {
-        private final String filter;
+        private final TopicFilter filter;
         private final int subscriptionOptions;
 
-        private Subscription(String filter, int subscriptionOptions) {
+        private Subscription(TopicFilter filter, int subscriptionOptions) {
             this.filter = filter;
             this.subscriptionOptions = subscriptionOptions;
         }
 
-        public String getFilter() {
+        public TopicFilter getFilter() {
             return filter;
         }
 
@@ -45,10 +46,10 @@ public class Subscribe extends MqttPacket {
         public static Subscription fromBuffer(ByteBuffer buffer) {
             // The Topic Filters MUST be a UTF-8 Encoded String [MQTT-3.8.3-1]
             final String filter = ByteBufferUtil.decodeUTF8String(buffer);
-            Utils.validateTopicFilter(filter);
+            final var topicFilter = TopicFilter.fromString(filter);
             final byte options = buffer.get();
             validateOptions(options);
-            return new Subscription(filter, options);
+            return new Subscription(topicFilter, options);
         }
 
         private static void validateOptions(byte options) {
