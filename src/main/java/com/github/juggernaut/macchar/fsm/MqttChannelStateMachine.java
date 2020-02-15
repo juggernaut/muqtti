@@ -90,6 +90,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             transition(ESTABLISHED, ESTABLISHED, ChannelWriteReadyEvent.class, p -> true, e -> mqttChannel.flushWriteBuffer()),
             transition(ESTABLISHED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, this::handleChannelDisconnected),
             transition(ESTABLISHED, DISCONNECTED, SendDisconnectEvent.class, p -> true, this::handleSendDisconnected),
+            transition(ESTABLISHED, DISCONNECTED, PacketReceivedEvent.class, this::isDisconnect, this::handleDisconnect),
             transition(DISCONNECTED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, p -> {})
     );
 
@@ -135,6 +136,10 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     private boolean isConnect(final PacketReceivedEvent event) {
         return event.getPacket().getPacketType() == MqttPacket.PacketType.CONNECT;
+    }
+
+    private boolean isDisconnect(final PacketReceivedEvent event) {
+        return event.getPacket().getPacketType() == MqttPacket.PacketType.DISCONNECT;
     }
 
     private boolean isSubscribe(final PacketReceivedEvent event) {
@@ -192,6 +197,12 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             System.out.println("Sending stored QoS1 messages if available");
             readAndSendQoS1MessagesIfAvailable();
         }
+    }
+
+    private void handleDisconnect(final PacketReceivedEvent event) {
+        // TODO: actually check disconnect reason code from the received DISCONNECT here
+        System.out.println("Session " + session.getId() + " disconnected gracefully");
+        session.onDisconnect(Session.DisconnectCause.NORMAL_CLIENT_INITIATED);
     }
 
     /**
