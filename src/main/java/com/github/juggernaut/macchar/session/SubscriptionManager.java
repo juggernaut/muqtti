@@ -24,7 +24,10 @@ public class SubscriptionManager {
         if (topicFilter.isShared()) {
             assert topicFilter.getShareName().isPresent();
             final String key = topicFilter.getShareName().get() + "/" + topicFilter.getFilterString();
-            return sharedSubscriptions.computeIfAbsent(key, k -> SharedSubscriptionState.fromSubscriptionState(subscriptionState));
+            return sharedSubscriptions.computeIfAbsent(key, k -> {
+                System.out.println("Creating shared subscription for filter for key " + key);
+                return SharedSubscriptionState.fromSubscriptionState(subscriptionState);
+            });
         }
         return subscriptionState;
     }

@@ -86,7 +86,7 @@ public class SharedSubscriptionState extends SubscriptionState implements Subscr
     private SubscriptionListener chooseListener() {
         final var listenerIterator = listeners.iterator();
         final int pos = roundRobinPos.get();
-        int current = 0;
+        int current = -1;
         SubscriptionListener listener = null;
         while (listenerIterator.hasNext() && current < pos) {
             listener = listenerIterator.next();
@@ -94,7 +94,11 @@ public class SharedSubscriptionState extends SubscriptionState implements Subscr
         }
         if (listener != null) {
             if (current == pos) {
-                roundRobinPos.incrementAndGet();
+                if (listenerIterator.hasNext()) {
+                    roundRobinPos.incrementAndGet();
+                } else {
+                    roundRobinPos.set(0);
+                }
             } else {
                 roundRobinPos.set(0);
             }
