@@ -102,4 +102,15 @@ public class Utils {
                 .map(klass::cast)
                 .findFirst();
     }
+
+    public static boolean isSharedTopicFilter(final String filter) {
+        // Assuming filter is already a valid topic filter, we want to know if it's a shared topic filter
+        final String[] segs = filter.split("/");
+        if (segs.length < 3) {
+            return false;
+        }
+        // A Shared Subscription's Topic Filter MUST start with $share/ and MUST contain a ShareName that is at least one character long [MQTT-4.8.2-1]
+        // The ShareName MUST NOT contain the characters "/", "+" or "#", but MUST be followed by a "/" character. This "/" character MUST be followed by a Topic Filter [MQTT-4.8.2-2]
+        return "$share".equals(segs[0]) && !segs[1].isEmpty() && !(segs[1].contains("#") || segs[1].contains("+"));
+    }
 }

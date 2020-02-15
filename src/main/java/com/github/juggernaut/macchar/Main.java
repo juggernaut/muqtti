@@ -37,11 +37,11 @@ public class Main {
         final String certFile = System.getProperty("certfile");
         final String keyFile  = System.getProperty("keyfile");
 
-        if (certFile.isBlank() && keyFile.isBlank()) {
+        if (certFile == null && keyFile == null) {
             return Optional.empty();
         }
 
-        if (certFile.isBlank() || keyFile.isBlank()) {
+        if (certFile == null || certFile.isBlank() || keyFile == null || keyFile.isBlank()) {
             throw new IllegalArgumentException("Both certfile and keyfile must be specified");
         }
 
