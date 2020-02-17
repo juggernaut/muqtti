@@ -2,6 +2,7 @@ package com.github.juggernaut.macchar;
 
 import com.github.juggernaut.macchar.packet.Utils;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -46,5 +47,23 @@ public class TopicFilter {
 
     public boolean isShared() {
         return shareName != null;
+    }
+
+    public String getRawFilterString() {
+        return shareName != null ? ("$share/" + shareName + "/" + filterString) : filterString;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TopicFilter that = (TopicFilter) o;
+        return filterString.equals(that.filterString) &&
+                Objects.equals(shareName, that.shareName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(filterString, shareName);
     }
 }

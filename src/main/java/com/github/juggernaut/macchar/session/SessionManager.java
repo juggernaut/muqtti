@@ -2,6 +2,7 @@ package com.github.juggernaut.macchar.session;
 
 import com.github.juggernaut.macchar.Actor;
 import com.github.juggernaut.macchar.QoS;
+import com.github.juggernaut.macchar.TopicFilter;
 import com.github.juggernaut.macchar.fsm.events.SendDisconnectEvent;
 import com.github.juggernaut.macchar.fsm.events.SendUnsubAckEvent;
 import com.github.juggernaut.macchar.packet.*;
@@ -51,7 +52,7 @@ public class SessionManager {
         private long sessionExpiryInterval;
         private Optional<WillData> willData;
         // topic filter -> session subscription
-        private final Map<String, SessionSubscription> sessionSubscriptions = new HashMap<>();
+        private final Map<TopicFilter, SessionSubscription> sessionSubscriptions = new HashMap<>();
 
         private Future<?> sessionExpiryTask;
         private Future<?> willExpiryTask;
@@ -167,7 +168,7 @@ public class SessionManager {
                                 this,
                                 subscriptionState);
                         // TODO: is there anything different to do here re: shared subscription?
-                        sessionSubscriptions.put(subscription.getFilter().getFilterString(), sessionSubscription);
+                        sessionSubscriptions.put(subscription.getFilter(), sessionSubscription);
                         System.out.println("Added session subscription for filter " + subscription.getFilter().getFilterString());
                     });
         }
@@ -178,11 +179,11 @@ public class SessionManager {
                 unsubscribe.getTopicFilters()
                         .stream()
                         .map(filter -> {
-                            if (sessionSubscriptions.containsKey(filter.getFilterString())) {
-                                final var subscription = sessionSubscriptions.get(filter.getFilterString());
+                            if (sessionSubscriptions.containsKey(filter)) {
+                                final var subscription = sessionSubscriptions.get(filter);
                                 subscription.deactivate();
                                 subscription.delete();
-                                sessionSubscriptions.remove(filter.getFilterString());
+                                sessionSubscriptions.remove(filter);
                                 return UnsubAck.ReasonCode.SUCCESS;
                             } else {
                                 return UnsubAck.ReasonCode.NO_SUBSCRIPTION_EXISTED;
