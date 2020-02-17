@@ -5,6 +5,7 @@ import com.github.juggernaut.macchar.property.UserProperty;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -101,6 +102,17 @@ public class Utils {
                 .filter(prop -> prop.getClass().equals(klass))
                 .map(klass::cast)
                 .findFirst();
+    }
+
+    public static void validatePropertyTypes(final List<MqttProperty> mqttProperties,
+                                             final Set<Class<? extends MqttProperty>> expectedPropertyTypes,
+                                             final MqttPacket.PacketType packetType) {
+        mqttProperties.forEach(prop -> {
+            if (!expectedPropertyTypes.contains(prop.getClass())) {
+                // TODO: better exception type
+                throw new IllegalArgumentException("Property type " + prop.getClass().getSimpleName() + " not allowed in packet " + packetType);
+            }
+        });
     }
 
 }

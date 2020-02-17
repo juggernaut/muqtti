@@ -18,12 +18,15 @@ public class Publish extends MqttPacket {
     private final String topicName;
     private final Optional<Integer> packetId; // empty if QoS=0
     private final ByteBuffer payload;
+    private final PublishProperties publishProperties;
 
-    protected Publish(int flags, String topicName, Optional<Integer> packetId, final ByteBuffer payload) {
+    protected Publish(int flags, String topicName, Optional<Integer> packetId, final ByteBuffer payload,
+                      final PublishProperties publishProperties) {
         super(PacketType.PUBLISH, flags);
         this.topicName = topicName;
         this.packetId = packetId;
         this.payload = payload;
+        this.publishProperties = publishProperties;
     }
 
     public static Publish fromBuffer(final int flags, final ByteBuffer buffer) {
@@ -36,10 +39,11 @@ public class Publish extends MqttPacket {
             packetId = decodePacketIdentifier(buffer);
         }
         final var properties = PropertiesDecoder.decode(buffer);
+        final var publishProperties = PublishProperties.fromRawProperties(properties);
         final var payload = buffer.slice();
         // Make sure that we tell the decoder layer that we have read this buffer fully
         buffer.position(buffer.limit());
-        return new Publish(flags, topicName, Optional.ofNullable(packetId), payload);
+        return new Publish(flags, topicName, Optional.ofNullable(packetId), payload, publishProperties);
     }
 
     public static Publish create(final QoS qos, final boolean dup, final boolean retain, final String topicName,
@@ -51,7 +55,7 @@ public class Publish extends MqttPacket {
             throw new IllegalArgumentException("Packet ID must be present if Qos > 0");
         }
         final int flags = encodeFlags(qos, dup, retain);
-        return new Publish(flags, topicName, packetId, payload);
+        return new Publish(flags, topicName, packetId, payload, PublishProperties.emptyProperties());
     }
 
     private static int encodeFlags(QoS qos, boolean dup, boolean retain) {
@@ -89,9 +93,7 @@ public class Publish extends MqttPacket {
 
     @Override
     protected int getEncodedVariableHeaderLength() {
-        // TODO: for now consider empty properties
-        final List<MqttProperty> properties = Collections.emptyList();
-        final int propertyLength = getEncodedPropertiesLength(properties);
+        final int propertyLength = getEncodedPropertiesLength(publishProperties.getRawProperties());
         return ByteBufferUtil.getEncodedUTF8StringLenghInBytes(topicName) +
                 packetId.map(p -> 2).orElse(0) +
                 ByteBufferUtil.getEncodedVariableByteIntegerLength(propertyLength) +
@@ -107,8 +109,9 @@ public class Publish extends MqttPacket {
     protected void encodeVariableHeader(ByteBuffer buffer) {
         ByteBufferUtil.encodeUTF8String(buffer, topicName);
         packetId.ifPresent(p -> ByteBufferUtil.encodeTwoByteInteger(buffer, p));
-        // TODO: just write a 0 property length for now
-        ByteBufferUtil.encodeVariableByteInteger(buffer, 0);
+        final int propertyLength = getEncodedPropertiesLength(publishProperties.getRawProperties());
+        ByteBufferUtil.encodeVariableByteInteger(buffer, propertyLength);
+        encodeProperties(buffer, publishProperties.getRawProperties());
     }
 
     public String getTopicName() {
