@@ -4,6 +4,7 @@ import com.github.juggernaut.macchar.Actor;
 import com.github.juggernaut.macchar.packet.Disconnect;
 import com.github.juggernaut.macchar.packet.Publish;
 import com.github.juggernaut.macchar.packet.Subscribe;
+import com.github.juggernaut.macchar.packet.Unsubscribe;
 
 import java.util.List;
 
@@ -33,6 +34,8 @@ public interface Session {
     void onDisconnect(DisconnectCause cause);
 
     void onSubscribe(Subscribe subscribeMsg);
+
+    void onUnsubscribe(Unsubscribe unsubscribeMsg);
 
     void onPublish(Publish publishMsg);
 

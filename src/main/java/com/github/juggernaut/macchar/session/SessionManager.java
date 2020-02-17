@@ -3,15 +3,14 @@ package com.github.juggernaut.macchar.session;
 import com.github.juggernaut.macchar.Actor;
 import com.github.juggernaut.macchar.QoS;
 import com.github.juggernaut.macchar.fsm.events.SendDisconnectEvent;
-import com.github.juggernaut.macchar.packet.Disconnect;
-import com.github.juggernaut.macchar.packet.Publish;
-import com.github.juggernaut.macchar.packet.Subscribe;
-import com.github.juggernaut.macchar.packet.WillData;
+import com.github.juggernaut.macchar.fsm.events.SendUnsubAckEvent;
+import com.github.juggernaut.macchar.packet.*;
 import com.github.juggernaut.macchar.property.SubscriptionIdentifier;
 import com.github.juggernaut.macchar.property.types.FourByteIntegerProperty;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * @author ameya
@@ -160,7 +159,7 @@ public class SessionManager {
             // TODO: we're only handling new subscriptions here, need to handle existing subscriptions according to
             // TODO: [MQTT-3.8.4-3]
             subscribe.getSubscriptions().stream()
-                    .filter(subscription -> !sessionSubscriptions.containsKey(subscription.getFilter()))
+                    .filter(subscription -> !sessionSubscriptions.containsKey(subscription.getFilter().getFilterString()))
                     .forEach(subscription -> {
                         final var subscriptionState = subscriptionManager.getOrCreateSubscription(subscription.getFilter());
                         final var sessionSubscription = SessionSubscription.from(subscription,
@@ -171,6 +170,31 @@ public class SessionManager {
                         sessionSubscriptions.put(subscription.getFilter().getFilterString(), sessionSubscription);
                         System.out.println("Added session subscription for filter " + subscription.getFilter().getFilterString());
                     });
+        }
+
+        @Override
+        public void onUnsubscribe(Unsubscribe unsubscribe) {
+            final List<UnsubAck.ReasonCode> reasonCodes =
+                unsubscribe.getTopicFilters()
+                        .stream()
+                        .map(filter -> {
+                            if (sessionSubscriptions.containsKey(filter.getFilterString())) {
+                                final var subscription = sessionSubscriptions.get(filter.getFilterString());
+                                subscription.deactivate();
+                                subscription.delete();
+                                sessionSubscriptions.remove(filter.getFilterString());
+                                return UnsubAck.ReasonCode.SUCCESS;
+                            } else {
+                                return UnsubAck.ReasonCode.NO_SUBSCRIPTION_EXISTED;
+                            }
+                        })
+                    .collect(Collectors.toList());
+            sendUnsubAck(unsubscribe.getPacketId(), reasonCodes);
+        }
+
+        private void sendUnsubAck(final int packetId, final List<UnsubAck.ReasonCode> reasonCodes) {
+            final var unsubAck = new UnsubAck(packetId, Collections.emptyList(), reasonCodes);
+            actor.sendMessage(new SendUnsubAckEvent(unsubAck));
         }
 
         @Override

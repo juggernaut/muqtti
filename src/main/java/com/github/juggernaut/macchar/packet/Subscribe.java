@@ -104,11 +104,11 @@ public class Subscribe extends MqttPacket {
             // The Payload MUST contain at least one Topic Filter and Subscription Options pair [MQTT-3.8.3-2]
             throw new IllegalArgumentException("SUBSCRIBE packet must have a non-empty payload");
         }
-        final var topicFilters = decodeTopicFilters(buffer);
-        return new Subscribe(flags, packetId, topicFilters, subscribeProperties);
+        final var subscriptions = decodeSubscriptions(buffer);
+        return new Subscribe(flags, packetId, subscriptions, subscribeProperties);
     }
 
-    private static List<Subscription> decodeTopicFilters(ByteBuffer buffer) {
+    private static List<Subscription> decodeSubscriptions(ByteBuffer buffer) {
         final List<Subscription> subscriptions = new ArrayList<>();
         while (buffer.hasRemaining()) {
             subscriptions.add(Subscription.fromBuffer(buffer));

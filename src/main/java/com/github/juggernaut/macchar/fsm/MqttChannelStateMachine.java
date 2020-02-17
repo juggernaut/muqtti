@@ -86,10 +86,12 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             transition(ESTABLISHED, ESTABLISHED, QoS1PublishMatchedEvent.class, p -> true, this::handleQoS1PublishMatched),
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isPubAck, this::handlePubAckReceived),
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isPingReq, this::handlePingReq),
+            transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isUnsubscribe, this::handleUnsubscribe),
             transition(INIT, INIT, ChannelWriteReadyEvent.class, p -> true, e -> mqttChannel.flushWriteBuffer()), // for TLS handshake
             transition(ESTABLISHED, ESTABLISHED, ChannelWriteReadyEvent.class, p -> true, e -> mqttChannel.flushWriteBuffer()),
             transition(ESTABLISHED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, this::handleChannelDisconnected),
             transition(ESTABLISHED, DISCONNECTED, SendDisconnectEvent.class, p -> true, this::handleSendDisconnected),
+            transition(ESTABLISHED, ESTABLISHED, SendUnsubAckEvent.class, p -> true, this::handleSendUnsubAck),
             transition(ESTABLISHED, DISCONNECTED, PacketReceivedEvent.class, this::isDisconnect, this::handleDisconnect),
             transition(DISCONNECTED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, p -> {})
     );
@@ -144,6 +146,10 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     private boolean isSubscribe(final PacketReceivedEvent event) {
         return event.getPacket().getPacketType() == MqttPacket.PacketType.SUBSCRIBE;
+    }
+
+    private boolean isUnsubscribe(final PacketReceivedEvent event) {
+        return event.getPacket().getPacketType() == MqttPacket.PacketType.UNSUBSCRIBE;
     }
 
     private boolean isPublish(final PacketReceivedEvent event) {
@@ -257,6 +263,13 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         System.out.println("Sent SUBACK");
     }
 
+    private void handleUnsubscribe(final PacketReceivedEvent event) {
+        assert isUnsubscribe(event);
+        assert session != null;
+        final var unsubscribe = ((Unsubscribe) event.getPacket());
+        session.onUnsubscribe(unsubscribe);
+    }
+
     private void handlePublishReceived(final PacketReceivedEvent event) {
         assert isPublish(event);
         assert session != null;
@@ -308,6 +321,11 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         System.out.println("Sending DISCONNECT to " + session.getId());
         mqttChannel.sendPacket(disconnect);
         mqttChannel.disconnect();
+    }
+
+    private void handleSendUnsubAck(final SendUnsubAckEvent event) {
+        System.out.println("Sending UNSUBACK to " + session.getId());
+        mqttChannel.sendPacket(event.getUnsubAck());
     }
 
     private void handleQoS1PublishMatched(final QoS1PublishMatchedEvent event) {

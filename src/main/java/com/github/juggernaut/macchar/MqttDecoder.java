@@ -104,6 +104,9 @@ public class MqttDecoder {
             case DISCONNECT:
                 packet = Disconnect.fromBuffer(flags, remainingPacketBuffer);
                 break;
+            case UNSUBSCRIBE:
+                packet = Unsubscribe.fromBuffer(flags, remainingPacketBuffer);
+                break;
             default:
                 throw new IllegalArgumentException("Decoding packet type " + packetType + " is not yet implemented");
         }
