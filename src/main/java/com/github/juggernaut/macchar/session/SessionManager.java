@@ -113,7 +113,8 @@ public class SessionManager {
             willData.ifPresent(wd -> {
                 // TODO: check that will retain is false (since retain is not supported)
                 final Publish willPublishMsg = Publish.create(wd.getWillQoS(), false, false, wd.getWillTopic(),
-                        Optional.of(1), wd.getWillPayload()); // packetId doesn't really matter here since outgoing publish will get their own packet ids
+                        // TODO: send will properties in the publish properties
+                        Optional.of(1), wd.getWillPayload(), PublishProperties.emptyProperties()); // packetId doesn't really matter here since outgoing publish will get their own packet ids
                 // fake that a publish has been received
                 subscriptionManager.onPublishReceived(willPublishMsg);
                 willData = Optional.empty();

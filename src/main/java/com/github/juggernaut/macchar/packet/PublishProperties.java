@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author ameya
@@ -22,6 +23,14 @@ public class PublishProperties {
             CorrelationData.class,
             UserProperty.class,
             SubscriptionIdentifier.class,
+            ContentType.class
+    );
+
+    private static final Set<Class<? extends MqttProperty>> FORWARD_UNALTERED_PROPERTY_TYPES = Set.of(
+            PayloadFormatIndicator.class,
+            ResponseTopic.class,
+            CorrelationData.class,
+            UserProperty.class,
             ContentType.class
     );
 
@@ -72,5 +81,12 @@ public class PublishProperties {
 
     public List<MqttProperty> getRawProperties() {
         return rawProperties;
+    }
+
+    public PublishProperties getPropertiesToForwardUnaltered() {
+        final var rawUnaltered = rawProperties.stream()
+                .filter(prop -> FORWARD_UNALTERED_PROPERTY_TYPES.contains(prop.getClass()))
+                .collect(Collectors.toList());
+        return new PublishProperties(rawUnaltered);
     }
 }

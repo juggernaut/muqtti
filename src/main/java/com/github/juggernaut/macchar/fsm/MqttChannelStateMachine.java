@@ -293,7 +293,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         final var receivedPublish = event.getMsg();
         final var payloadToSend = receivedPublish.getPayload().slice();
         final var publishToSend = Publish.create(QoS.AT_MOST_ONCE, false, false, receivedPublish.getTopicName(),
-                Optional.empty(), payloadToSend);
+                Optional.empty(), payloadToSend, receivedPublish.getPublishProperties().getPropertiesToForwardUnaltered());
         mqttChannel.sendPacket(publishToSend);
         System.out.println("Sent QoS0 publish msg");
     }
@@ -346,7 +346,8 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         if (availableMessages.size() > 0) {
             earliestOutstandingPacketId = currentPublishPacketId;
             availableMessages.stream()
-                    .map(m -> Publish.create(QoS.AT_LEAST_ONCE, false, false, m.getTopicName(), Optional.of(incrementPublishPacketId()), m.getPayload().slice()))
+                    .map(m -> Publish.create(QoS.AT_LEAST_ONCE, false, false, m.getTopicName(), Optional.of(incrementPublishPacketId()), m.getPayload().slice(),
+                            m.getPublishProperties().getPropertiesToForwardUnaltered()))
                     .forEach(publish -> mqttChannel.sendPacket(publish));
             outstandingQoS1Messages += availableMessages.size();
         }

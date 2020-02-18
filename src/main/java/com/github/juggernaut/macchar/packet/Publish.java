@@ -2,12 +2,9 @@ package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.ByteBufferUtil;
 import com.github.juggernaut.macchar.QoS;
-import com.github.juggernaut.macchar.property.MqttProperty;
 import com.github.juggernaut.macchar.property.PropertiesDecoder;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -47,7 +44,7 @@ public class Publish extends MqttPacket {
     }
 
     public static Publish create(final QoS qos, final boolean dup, final boolean retain, final String topicName,
-                                 final Optional<Integer> packetId, final ByteBuffer payload) {
+                                 final Optional<Integer> packetId, final ByteBuffer payload, final PublishProperties publishProperties) {
         if (qos == QoS.AT_MOST_ONCE && packetId.isPresent()) {
             throw new IllegalArgumentException("Packet ID cannot be specified if QoS is 0");
         }
@@ -55,7 +52,7 @@ public class Publish extends MqttPacket {
             throw new IllegalArgumentException("Packet ID must be present if Qos > 0");
         }
         final int flags = encodeFlags(qos, dup, retain);
-        return new Publish(flags, topicName, packetId, payload, PublishProperties.emptyProperties());
+        return new Publish(flags, topicName, packetId, payload, publishProperties);
     }
 
     private static int encodeFlags(QoS qos, boolean dup, boolean retain) {
@@ -141,5 +138,9 @@ public class Publish extends MqttPacket {
     @Override
     protected ByteBuffer encodePayload() {
         return payload;
+    }
+
+    public PublishProperties getPublishProperties() {
+        return publishProperties;
     }
 }

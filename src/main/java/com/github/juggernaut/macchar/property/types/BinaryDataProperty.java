@@ -24,7 +24,7 @@ public class BinaryDataProperty extends MqttProperty {
 
     @Override
     protected void encodeValue(ByteBuffer buffer) {
-        buffer.put(value);
+        ByteBufferUtil.encodeBinaryData(buffer, value);
     }
 
     public byte[] getValue() {
