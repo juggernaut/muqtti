@@ -1,6 +1,7 @@
 package com.github.juggernaut.macchar.fsm;
 
 import com.github.juggernaut.macchar.Configuration;
+import com.github.juggernaut.macchar.exception.MalformedPacketException;
 import com.github.juggernaut.macchar.fsm.events.*;
 import com.github.juggernaut.macchar.MqttChannel;
 import com.github.juggernaut.macchar.QoS;
@@ -79,6 +80,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     private final List<Transition> transitions = List.of(
             transition(INIT, ESTABLISHED, PacketReceivedEvent.class, this::isConnect, this::handleConnect),
+            transition(INIT, CHANNEL_DISCONNECTED, ExceptionEvent.class, this::isMalformedConnect, this::handleMalformedConnect),
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isSubscribe, this::handleSubscribe),
             transition(ESTABLISHED, ESTABLISHED, SendQoS0PublishEvent.class, p -> true, this::handleSendQoS0Publish),
             transition(ESTABLISHED, DISCONNECTED, PacketReceivedEvent.class, this::isPublishQoS2, this::handleQoS2PublishReceived),
@@ -166,6 +168,11 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     private boolean isPingReq(final PacketReceivedEvent event) {
         return event.getPacket().getPacketType() == MqttPacket.PacketType.PINGREQ;
+    }
+
+    private boolean isMalformedConnect(final ExceptionEvent event) {
+        return event.getException() instanceof MalformedPacketException &&
+                ((MalformedPacketException) event.getException()).getPacketType() == MqttPacket.PacketType.CONNECT;
     }
 
     private void handleConnect(final PacketReceivedEvent event) {
@@ -389,6 +396,12 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     private void handlePingReq(final PacketReceivedEvent event) {
         mqttChannel.sendPacket(PingResp.INSTANCE);
+    }
+
+    private void handleMalformedConnect(final ExceptionEvent event) {
+        assert isMalformedConnect(event);
+        final int connAckReasonCode = ((MalformedPacketException) event.getException()).getReasonCode();
+        mqttChannel.sendPacket(new ConnAck())
     }
 
     public State getState() {

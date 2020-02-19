@@ -1,7 +1,9 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.exception.MqttException;
 import com.github.juggernaut.macchar.fsm.events.ChannelDisconnectedEvent;
 import com.github.juggernaut.macchar.fsm.events.ChannelWriteReadyEvent;
+import com.github.juggernaut.macchar.fsm.events.ExceptionEvent;
 import com.github.juggernaut.macchar.fsm.events.PacketReceivedEvent;
 import com.github.juggernaut.macchar.packet.MqttPacket;
 
@@ -56,8 +58,10 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
         updateTimer();
         try {
             mqttDecoder.onRead(buffer);
-        } catch (IllegalArgumentException e) {
-            System.err.println("Failed to parse MQTT packet: " + e.getMessage());
+        } catch (final MqttException e) {
+            mqttChannelActor.sendMessage(new ExceptionEvent(e));
+        } catch (final Exception e) {
+            System.err.println("Unhandled exception while parsing MQTT packet");
             e.printStackTrace();
         }
     }

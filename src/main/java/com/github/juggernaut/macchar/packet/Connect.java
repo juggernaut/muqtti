@@ -3,6 +3,7 @@ package com.github.juggernaut.macchar.packet;
 import com.github.juggernaut.macchar.ByteBufferUtil;
 import com.github.juggernaut.macchar.QoS;
 import com.github.juggernaut.macchar.VariableByteIntegerDecoder;
+import com.github.juggernaut.macchar.exception.MalformedPacketException;
 import com.github.juggernaut.macchar.property.PropertiesDecoder;
 
 import java.nio.ByteBuffer;
@@ -110,8 +111,7 @@ public class Connect extends MqttPacket {
     private static void validateProtocolVersion(ByteBuffer buffer) {
         final int protocolVersion = buffer.get();
         if (protocolVersion != 5) {
-            // TODO: must some how send a connack packet with an error code in this case
-            throw new IllegalArgumentException("Only MQTT version 5 is supported");
+            throw new MalformedPacketException("Only MQTT version 5 is supported", PacketType.CONNECT, ConnAck.ConnectReasonCode.UNSUPPORTED_PROTOCOL_VERSION.getIntValue());
         }
     }
 

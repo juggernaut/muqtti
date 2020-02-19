@@ -9,6 +9,7 @@ import com.github.juggernaut.macchar.property.ServerKeepAlive;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,7 @@ public class ConnAck extends MqttPacket {
 
     public enum ConnectReasonCode {
         SUCCESS(0x00),
+        UNSUPPORTED_PROTOCOL_VERSION(0x84),
         UNSPECIFIED_ERROR(0x80);
 
         private final int intValue;
@@ -31,6 +33,13 @@ public class ConnAck extends MqttPacket {
 
         public int getIntValue() {
             return intValue;
+        }
+
+        public static ConnectReasonCode fromIntValue(int value) {
+            return Arrays.stream(values())
+                    .filter(v -> v.intValue == value)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("No ConnectReasonCode for value " + value));
         }
     }
 
