@@ -22,8 +22,12 @@ public class ConnAck extends MqttPacket {
 
     public enum ConnectReasonCode {
         SUCCESS(0x00),
+        MALFORMED_PACKET(0x81),
+        PROTOCOL_ERROR(0x82),
         UNSUPPORTED_PROTOCOL_VERSION(0x84),
-        UNSPECIFIED_ERROR(0x80);
+        UNSPECIFIED_ERROR(0x80),
+        QOS_NOT_SUPPORTED(0x9b),
+        ;
 
         private final int intValue;
 

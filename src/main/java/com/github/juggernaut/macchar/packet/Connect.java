@@ -95,7 +95,7 @@ public class Connect extends MqttPacket {
     private static void validateProtocolLength(ByteBuffer buffer) {
         int variableHeaderLength = ByteBufferUtil.decodeTwoByteInteger(buffer);
         if (variableHeaderLength != 4) {
-            throw new IllegalArgumentException("Variable header length of CONNECT packet must be 4!");
+            throw new MalformedPacketException("Variable header length of CONNECT packet must be 4!", PacketType.CONNECT, ConnAck.ConnectReasonCode.MALFORMED_PACKET.getIntValue());
         }
     }
 
@@ -104,7 +104,7 @@ public class Connect extends MqttPacket {
         buffer.get(protocolName);
         final String protocolNameStr = new String(protocolName, StandardCharsets.UTF_8);
         if (!"MQTT".equalsIgnoreCase(protocolNameStr)) {
-            throw new IllegalArgumentException("Protocol name in CONNECT packet must be 'MQTT'");
+            throw new MalformedPacketException("Protocol name in CONNECT packet must be 'MQTT'", PacketType.CONNECT, ConnAck.ConnectReasonCode.MALFORMED_PACKET.getIntValue());
         }
     }
 
@@ -119,7 +119,7 @@ public class Connect extends MqttPacket {
         byte connectFlags = buffer.get();
         // The Server MUST validate that the reserved flag in the CONNECT packet is set to 0 [MQTT-3.1.2-3]
         if ((connectFlags & 0x01) != 0) {
-            throw new IllegalArgumentException("Reserved flag in the CONNECT packet must be set to 0");
+            throw new MalformedPacketException("Reserved flag in the CONNECT packet must be set to 0", PacketType.CONNECT, ConnAck.ConnectReasonCode.MALFORMED_PACKET.getIntValue());
         }
         return connectFlags;
     }
@@ -127,22 +127,23 @@ public class Connect extends MqttPacket {
     private static QoS decodeWillQoS(final byte connectFlags) {
         int willQos = (connectFlags >> WILL_QOS) & 0x03;
         if (willQos > 2) {
-            throw new IllegalArgumentException("Will QoS must be 0, 1 or 2");
+            throw new MalformedPacketException("Will QoS must be 0, 1 or 2", PacketType.CONNECT, ConnAck.ConnectReasonCode.MALFORMED_PACKET.getIntValue());
         }
-        // TODO: reject CONNECT if Will QoS = 2 because we don't support it
-
+        if (willQos == 2) {
+            throw new MalformedPacketException("Will QoS 2 not supported", PacketType.CONNECT, ConnAck.ConnectReasonCode.QOS_NOT_SUPPORTED.getIntValue());
+        }
         return QoS.fromIntValue(willQos);
     }
 
     private static void validateConnectFlags(byte connectFlags, QoS willQos) {
         // If the Will Flag is set to 0, then the Will QoS MUST be set to 0 (0x00) [MQTT-3.1.2-11]
         if (!hasWillFlag(connectFlags) && willQos != QoS.AT_MOST_ONCE) {
-            throw new IllegalArgumentException("Will QoS must be 0 if the Will Flag is not set");
+            throw new MalformedPacketException("Will QoS must be 0 if the Will Flag is not set", PacketType.CONNECT, ConnAck.ConnectReasonCode.MALFORMED_PACKET.getIntValue());
         }
 
         // If the Will Flag is set to 0, then Will Retain MUST be set to 0 [MQTT-3.1.2-13]
         if (!hasWillFlag(connectFlags) && hasWillRetainFlag(connectFlags)) {
-            throw new IllegalArgumentException("If the Will Flag is set to 0, then Will Retain MUST be set to 0");
+            throw new MalformedPacketException("If the Will Flag is set to 0, then Will Retain MUST be set to 0", PacketType.CONNECT, ConnAck.ConnectReasonCode.MALFORMED_PACKET.getIntValue());
         }
     }
 

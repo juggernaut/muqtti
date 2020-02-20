@@ -401,7 +401,9 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private void handleMalformedConnect(final ExceptionEvent event) {
         assert isMalformedConnect(event);
         final int connAckReasonCode = ((MalformedPacketException) event.getException()).getReasonCode();
-        mqttChannel.sendPacket(new ConnAck())
+        mqttChannel.sendPacket(new ConnAck(ConnAck.ConnectReasonCode.fromIntValue(connAckReasonCode), false,
+                Optional.empty(), Optional.empty()));
+        mqttChannel.disconnect();
     }
 
     public State getState() {
