@@ -26,6 +26,7 @@ public class Disconnect extends MqttPacket {
         NORMAL_DISCONNECTION(0x0),
         SESSION_TAKEN_OVER(0x8E),
         QOS_NOT_SUPPORTED(0x9B),
+        MALFORMED_ERROR(0x81),
         ;
 
         private final int value;

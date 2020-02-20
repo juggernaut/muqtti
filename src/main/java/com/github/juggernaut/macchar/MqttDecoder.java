@@ -69,7 +69,7 @@ public class MqttDecoder {
                 }
                 break;
             default:
-                throw new IllegalArgumentException("Unknown state");
+                throw new IllegalStateException("Unknown state");
         }
         // Make sure we always read the entire incoming buffer
         if (incoming.hasRemaining()) {

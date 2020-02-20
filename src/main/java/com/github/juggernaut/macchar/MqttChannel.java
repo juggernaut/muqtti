@@ -1,5 +1,6 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.exception.MqttException;
 import com.github.juggernaut.macchar.fsm.events.ChannelDisconnectedEvent;
 import com.github.juggernaut.macchar.fsm.events.ChannelWriteReadyEvent;
@@ -8,6 +9,7 @@ import com.github.juggernaut.macchar.fsm.events.PacketReceivedEvent;
 import com.github.juggernaut.macchar.packet.MqttPacket;
 
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -60,6 +62,9 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
             mqttDecoder.onRead(buffer);
         } catch (final MqttException e) {
             mqttChannelActor.sendMessage(new ExceptionEvent(e));
+        } catch (final BufferUnderflowException e) {
+            // TODO: log here
+            mqttChannelActor.sendMessage(new ExceptionEvent(new DecodingException("Protocol decode error")));
         } catch (final Exception e) {
             System.err.println("Unhandled exception while parsing MQTT packet");
             e.printStackTrace();

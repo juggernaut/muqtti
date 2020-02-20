@@ -1,6 +1,7 @@
 package com.github.juggernaut.macchar.fsm;
 
 import com.github.juggernaut.macchar.Configuration;
+import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.exception.MalformedPacketException;
 import com.github.juggernaut.macchar.fsm.events.*;
 import com.github.juggernaut.macchar.MqttChannel;
@@ -95,6 +96,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             transition(ESTABLISHED, DISCONNECTED, SendDisconnectEvent.class, p -> true, this::handleSendDisconnected),
             transition(ESTABLISHED, ESTABLISHED, SendUnsubAckEvent.class, p -> true, this::handleSendUnsubAck),
             transition(ESTABLISHED, DISCONNECTED, PacketReceivedEvent.class, this::isDisconnect, this::handleDisconnect),
+            transition(ESTABLISHED, CHANNEL_DISCONNECTED, ExceptionEvent.class, this::isDecodingException, this::handleDecodingException),
             transition(DISCONNECTED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, p -> {})
     );
 
@@ -173,6 +175,10 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private boolean isMalformedConnect(final ExceptionEvent event) {
         return event.getException() instanceof MalformedPacketException &&
                 ((MalformedPacketException) event.getException()).getPacketType() == MqttPacket.PacketType.CONNECT;
+    }
+
+    private boolean isDecodingException(final ExceptionEvent event) {
+        return event.getException() instanceof DecodingException;
     }
 
     private void handleConnect(final PacketReceivedEvent event) {
@@ -403,6 +409,15 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         final int connAckReasonCode = ((MalformedPacketException) event.getException()).getReasonCode();
         mqttChannel.sendPacket(new ConnAck(ConnAck.ConnectReasonCode.fromIntValue(connAckReasonCode), false,
                 Optional.empty(), Optional.empty()));
+        mqttChannel.disconnect();
+    }
+
+    private void handleDecodingException(final ExceptionEvent event) {
+        assert isDecodingException(event);
+        mqttChannel.sendPacket(Disconnect.create(Disconnect.ReasonCode.MALFORMED_ERROR));
+        if (session != null) {
+            session.onDisconnect(Session.DisconnectCause.SERVER_INITIATED);
+        }
         mqttChannel.disconnect();
     }
 
