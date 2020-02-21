@@ -118,7 +118,7 @@ public class MqttServer {
                         channelListener.onWriteReady();
                     }
 
-                }, 50);
+                });
 
         }
     }
