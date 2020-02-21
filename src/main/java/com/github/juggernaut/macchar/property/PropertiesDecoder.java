@@ -81,6 +81,27 @@ public class PropertiesDecoder {
                 case WILL_DELAY_INTERVAL:
                     properties.add(WillDelayInterval.fromBuffer(buffer));
                     break;
+                case SESSION_EXPIRY_INTERVAL:
+                    properties.add(SessionExpiryInterval.fromBuffer(buffer));
+                    break;
+                case RECEIVE_MAXIMUM:
+                    properties.add(ReceiveMaximum.fromBuffer(buffer));
+                    break;
+                case MAXIMUM_PACKET_SIZE:
+                    properties.add(MaximumPacketSize.fromBuffer(buffer));
+                    break;
+                case TOPIC_ALIAS_MAXIMUM:
+                    properties.add(TopicAliasMaximum.fromBuffer(buffer));
+                    break;
+                case REQUEST_RESPONSE_INFORMATION:
+                    properties.add(RequestResponseInformation.fromBuffer(buffer));
+                    break;
+                case REQUEST_PROBLEM_INFORMATION:
+                    properties.add(RequestProblemInformation.fromBuffer(buffer));
+                    break;
+                case AUTHENTICATION_METHOD:
+                    properties.add(AuthenticationMethod.fromBuffer(buffer));
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknown property identifier " + propertyIdentifier);
             }

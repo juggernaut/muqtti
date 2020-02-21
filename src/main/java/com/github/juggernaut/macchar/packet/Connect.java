@@ -53,6 +53,7 @@ public class Connect extends MqttPacket {
         final QoS willQoS = decodeWillQoS(connectFlags);
         validateConnectFlags(connectFlags, willQoS);
         final int keepAlive = decodeKeepAlive(buffer);
+        final var properties = PropertiesDecoder.decode(buffer);
         final int propertyLength = decodePropertyLength(buffer);
         if (propertyLength > buffer.remaining()) {
             throw new IllegalArgumentException("Invalid packet length based on property length");

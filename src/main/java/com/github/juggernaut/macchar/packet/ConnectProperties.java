@@ -1,8 +1,8 @@
 package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.ByteBufferUtil;
-import com.github.juggernaut.macchar.UserProperty;
 import com.github.juggernaut.macchar.VariableByteIntegerDecoder;
+import com.github.juggernaut.macchar.property.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,27 +26,53 @@ public class ConnectProperties {
     private String authenticationMethod;
     private byte[] authenticationData;
 
-    public long getSessionExpiryInterval() {
+    private final List<MqttProperty> rawProperties;
+
+    private ConnectProperties(List<MqttProperty> rawProperties) {
+        this.rawProperties = rawProperties;
+    }
+
+    public SessionExpiryInterval getSessionExpiryInterval() {
         // 3.1.2.11.2: If the Session Expiry Interval is absent the value 0 is used
-        return sessionExpiryInterval == -1 ? 0 : sessionExpiryInterval;
+        return Utils.extractProperty(SessionExpiryInterval.class, rawProperties)
+                .orElseGet(() -> new SessionExpiryInterval(0));
     }
 
-    public int getReceiveMaximum() {
+    public ReceiveMaximum getReceiveMaximum() {
         // 3.1.2.11.3: If the Receive Maximum value is absent then its value defaults to 65,535
-        return receiveMaximum == -1 ? 65535 : receiveMaximum;
+        return Utils.extractProperty(ReceiveMaximum.class, rawProperties)
+                .orElseGet(() -> new ReceiveMaximum(65535));
     }
 
-    public Optional<Long> getMaximumPacketSize() {
-        return maximumPacketSize == -1 ? Optional.empty() : Optional.of(maximumPacketSize);
+    public Optional<MaximumPacketSize> getMaximumPacketSize() {
+        return Utils.extractProperty(MaximumPacketSize.class, rawProperties);
     }
 
-    public int getTopicAliasMaximum() {
+    public TopicAliasMaximum getTopicAliasMaximum() {
         // 3.1.2.11.5: If the Topic Alias Maximum property is absent, the default value is 0.
-        return topicAliasMaximum == -1 ? 0 : topicAliasMaximum;
+        return Utils.extractProperty(TopicAliasMaximum.class, rawProperties)
+                .orElseGet(() -> new TopicAliasMaximum(0));
     }
+
+    public RequestResponseInformation getRequestResponseInformation() {
+        // 3.1.2.11.6:  If the Request Response Information is absent, the value of 0 is used
+        return Utils.extractProperty(RequestResponseInformation.class, rawProperties)
+                .orElseGet(() -> new RequestResponseInformation((byte) 0));
+    }
+
+    public RequestProblemInformation getRequestProblemInformation() {
+        // 3.1.2.11.7: If the Request Problem Information is absent, the value of 1 is used
+        return Utils.extractProperty(RequestProblemInformation.class, rawProperties)
+                .orElseGet(() -> new RequestProblemInformation((byte) 1));
+    }
+
 
     public List<UserProperty> getUserProperties() {
-        return userProperties;
+        return Utils.extractUserProperties(rawProperties);
+    }
+
+    public Optional<AuthenticationMethod> getAuthenticationMethod() {
+        return Utils.extractProperty(AuthenticationMethod.class, rawProperties);
     }
 
     public void decodeFromBuffer(final ByteBuffer buffer) {
