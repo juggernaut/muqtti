@@ -1,5 +1,7 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.packet.Utils;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
@@ -10,6 +12,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author ameya
@@ -20,6 +24,7 @@ public class MqttServer {
     private final Function<SelectionKey, ChannelListener> channelListenerFactory;
     private final int numSelectorThreads;
 
+    private static final Logger LOGGER = Logger.getLogger(MqttServer.class.getName());
 
     public MqttServer(Function<SelectionKey, ChannelListener> channelListenerFactory, final int port, int numSelectorThreads) {
         this.channelListenerFactory = Objects.requireNonNull(channelListenerFactory);
@@ -62,7 +67,6 @@ public class MqttServer {
 
         @Override
         public void run() {
-            System.out.println("Going into select loop..");
             while (true) {
                 try {
                     doSelect();
@@ -80,7 +84,7 @@ public class MqttServer {
                         try {
                             final var newSocket = ((ServerSocketChannel) selectedKey.channel()).accept();
                             if (newSocket != null) { // don't think this will ever be null, but defensive programming
-                                System.out.println("Accepted new connection from " + newSocket.getRemoteAddress() + " on thread " + Thread.currentThread().getId());
+                                LOGGER.fine(() -> "Accepted new connection from " + Utils.getRemoteAddressUnchecked(newSocket));
                                 newSocket.configureBlocking(false);
                                 // Turn off nagle
                                 newSocket.setOption(StandardSocketOptions.TCP_NODELAY, true);
@@ -89,7 +93,7 @@ public class MqttServer {
                                 newChannelKey.attach(channelListener);
                             }
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            LOGGER.log(Level.SEVERE, e, () -> "Error accepting connection");
                         }
                     } else if (selectedKey.isReadable()) {
                         final var socketChannel = (SocketChannel) selectedKey.channel();
@@ -105,19 +109,19 @@ public class MqttServer {
                                 // It is expected that all of the buffer is read by the listener
                                 channelListener.onRead(readBuffer);
                                 if (readBuffer.hasRemaining()) {
-                                    System.err.println("ERROR: remaining bytes in read buffer, this a serious programming error");
+                                    LOGGER.severe("Remaining bytes in read buffer; the handler _should_ consume all" +
+                                            " bytes. This a serious programming error!");
                                 }
                                 readBuffer.clear();
                                 numberReadBytes = socketChannel.read(readBuffer);
                             }
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            LOGGER.log(Level.SEVERE, e, () -> "I/O error reading bytes off socket " + Utils.getRemoteAddressUnchecked(socketChannel));
                         }
                     } else if (selectedKey.isWritable()) {
                         final var channelListener = (ChannelListener) selectedKey.attachment();
                         channelListener.onWriteReady();
                     }
-
                 });
 
         }

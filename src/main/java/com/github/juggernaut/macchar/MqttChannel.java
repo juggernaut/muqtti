@@ -7,8 +7,10 @@ import com.github.juggernaut.macchar.fsm.events.ChannelWriteReadyEvent;
 import com.github.juggernaut.macchar.fsm.events.ExceptionEvent;
 import com.github.juggernaut.macchar.fsm.events.PacketReceivedEvent;
 import com.github.juggernaut.macchar.packet.MqttPacket;
+import com.github.juggernaut.macchar.packet.Utils;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -20,6 +22,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author ameya
@@ -30,6 +34,8 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
     private final SelectionKey selectionKey;
     private final MqttDecoder mqttDecoder;
     private final Actor mqttChannelActor;
+
+    private static final Logger LOGGER = Logger.getLogger(MqttChannel.class.getName());
 
     // Buffer used when channel is not writeable
     private ByteBuffer writeBuffer;
@@ -63,11 +69,11 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
         } catch (final MqttException e) {
             mqttChannelActor.sendMessage(new ExceptionEvent(e));
         } catch (final BufferUnderflowException e) {
-            // TODO: log here
+            LOGGER.log(Level.FINE, "Buffer underflow (malformed packet) occurred during decoding", e);
             mqttChannelActor.sendMessage(new ExceptionEvent(new DecodingException("Protocol decode error")));
         } catch (final Exception e) {
-            System.err.println("Unhandled exception while parsing MQTT packet");
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING, "Unhandled exception occurred during decoding", e);
+            // TODO: disconnect here, send message to actor
         }
     }
 
@@ -80,15 +86,18 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
 
     private void scheduleKeepAliveTimeout() {
         timerFuture = timerService.schedule(() -> {
-            System.out.println("Disconnecting channel because keepalive timeout expired");
+            LOGGER.info(() -> "Disconnecting channel " + getRemoteAddress() + " because keepalive timeout expired");
             try {
                 // TODO: should be different for TLS channel
                 socketChannel.close();
             } catch (IOException e) {
-                // TODO: log warn here
-                e.printStackTrace();
+                LOGGER.log(Level.INFO, e, () -> "Failed to close channel " + getRemoteAddress());
             }
         }, keepAliveTimeout, TimeUnit.SECONDS);
+    }
+
+    public SocketAddress getRemoteAddress() {
+        return Utils.getRemoteAddressUnchecked(socketChannel);
     }
 
     public void setKeepAliveTimeout(final long timeout) {
@@ -101,7 +110,7 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
 
     @Override
     public void accept(MqttPacket mqttPacket) {
-        System.out.println("Successfully decoded packet of type " + mqttPacket.getPacketType());
+        LOGGER.finest(() -> "Successfully decoded packet of type " + mqttPacket.getPacketType());
         mqttChannelActor.sendMessage(new PacketReceivedEvent(mqttPacket));
     }
 

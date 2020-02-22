@@ -16,6 +16,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.github.juggernaut.macchar.fsm.MqttChannelStateMachine.State.*;
@@ -42,6 +45,8 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private int outstandingQoS1Messages = 0;
 
     private boolean matchingQoS1MessagesAvailable = false;
+
+    private static final Logger LOGGER = Logger.getLogger(MqttChannelStateMachine.class.getName());
 
     public enum State {
         INIT,
@@ -118,7 +123,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     @Override
     public void init() {
         currentState = INIT;
-        System.out.println("MQTT state machine initialized");
+        log(Level.FINER, () -> "MQTT state machine initialized");
     }
 
     @Override
@@ -133,12 +138,9 @@ public class MqttChannelStateMachine extends ActorStateMachine {
                 t.action.accept(t.cast(event));
                 currentState = t.toState;
             } catch (Exception e) {
-                System.out.println("Unhandled exception during state machine action for event " + event.getClass());
-                e.printStackTrace();
+                log(Level.SEVERE, e, () -> "Unhandled exception during state machine action for event " + event.getClass());
             }
-        }, () -> {
-            System.out.println("Event " + event.getClass() + " not applicable at state " + currentState);
-        });
+        }, () -> log(Level.FINE, () -> "Event " + event.getClass() + " not applicable at state " + currentState));
         return applicableTransition.isPresent();
     }
 
@@ -209,20 +211,20 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
         final var connAck = new ConnAck(ConnAck.ConnectReasonCode.SUCCESS, sessionPresent, Optional.ofNullable(assignedClientId), keepAliveProperty);
         mqttChannel.sendPacket(connAck);
-        System.out.println("Sent CONNACK");
+        log(Level.FINER, () -> "Sent CONNACK");
 
         if (sessionPresent) {
-            System.out.println("Detected existing session for " + session.getId());
+            log(Level.FINER, () ->"Detected existing session for " + session.getId());
             session.reactivate(getActor());
             // If there are available stored QoS1 messages for this session, start sending them
-            System.out.println("Sending stored QoS1 messages if available");
+            log(Level.FINER, () -> "Sending stored QoS1 messages if available");
             readAndSendQoS1MessagesIfAvailable();
         }
     }
 
     private void handleDisconnect(final PacketReceivedEvent event) {
         // TODO: actually check disconnect reason code from the received DISCONNECT here
-        System.out.println("Session " + session.getId() + " disconnected gracefully");
+        log(Level.FINE, () -> "Session " + session.getId() + " disconnected gracefully");
         session.onDisconnect(Session.DisconnectCause.NORMAL_CLIENT_INITIATED);
     }
 
@@ -276,7 +278,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
                 .collect(Collectors.toList());
         final var subAck = new SubAck(subscribe.getPacketId(), reasonCodes);
         mqttChannel.sendPacket(subAck);
-        System.out.println("Sent SUBACK");
+        log(Level.FINER, () -> "Sent SUBACK");
     }
 
     private void handleUnsubscribe(final PacketReceivedEvent event) {
@@ -290,7 +292,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         assert isPublish(event);
         assert session != null;
         final var publish = ((Publish) event.getPacket());
-        System.out.println("Received PUBLISH, pubbing it internally");
+        log(Level.FINER, () -> "Received PUBLISH, pubbing it internally");
         session.onPublish(publish);
         if (publish.getQoS() == QoS.AT_LEAST_ONCE) {
             sendPubAck(publish);
@@ -311,13 +313,13 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         final var publishToSend = Publish.create(QoS.AT_MOST_ONCE, false, false, receivedPublish.getTopicName(),
                 Optional.empty(), payloadToSend, receivedPublish.getPublishProperties().getPropertiesToForwardUnaltered());
         mqttChannel.sendPacket(publishToSend);
-        System.out.println("Sent QoS0 publish msg");
+        log(Level.FINER, () -> "Sent QoS0 publish msg");
     }
 
     private void handleChannelDisconnected(final ChannelDisconnectedEvent event) {
         // channel can get disconnected even before we have an actual session
         if (session != null) {
-            System.out.println("Session " + session.getId() + " disconnected unceremoniously");
+            log(Level.FINE, () -> "Session " + session.getId() + " disconnected unceremoniously");
             session.onDisconnect(Session.DisconnectCause.UNCEREMONIOUS);
         }
     }
@@ -334,13 +336,13 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     }
 
     private void sendDisconnect(final Disconnect disconnect) {
-        System.out.println("Sending DISCONNECT to " + session.getId());
+        log(Level.FINER, () -> "Sending DISCONNECT to " + session.getId());
         mqttChannel.sendPacket(disconnect);
         mqttChannel.disconnect();
     }
 
     private void handleSendUnsubAck(final SendUnsubAckEvent event) {
-        System.out.println("Sending UNSUBACK to " + session.getId());
+        log(Level.FINER, () -> "Sending UNSUBACK to " + session.getId());
         mqttChannel.sendPacket(event.getUnsubAck());
     }
 
@@ -352,7 +354,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private void readAndSendQoS1MessagesIfAvailable() {
         int numCanSend = clientReceiveMaximum - outstandingQoS1Messages;
         if (numCanSend == 0) {
-            System.out.println("Already at receive maximum, can't send more QoS1 messages");
+            log(Level.FINE, () -> "Already at receive maximum of " + clientReceiveMaximum + ", can't send more QoS1 messages");
             return;
         }
         final var availableMessages = session.readAvailableQoS1Messages(numCanSend);
@@ -432,6 +434,19 @@ public class MqttChannelStateMachine extends ActorStateMachine {
 
     public State getState() {
         return currentState;
+    }
+
+    private void log(Level level, Throwable t, Supplier<String> messageSupplier) {
+        LOGGER.log(level, t, () -> getLogLinePrefix() + messageSupplier.get());
+    }
+
+    private void log(Level level, Supplier<String> messageSupplier) {
+        LOGGER.log(level, () -> getLogLinePrefix() + messageSupplier.get());
+    }
+
+    private String getLogLinePrefix() {
+        return "[remote-address=" + mqttChannel.getRemoteAddress() + ", session-id=" +
+                (session == null ? "n/a" : session.getId()) + "]";
     }
 
     @Override

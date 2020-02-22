@@ -4,6 +4,9 @@ import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.property.MqttProperty;
 import com.github.juggernaut.macchar.property.UserProperty;
 
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -114,6 +117,14 @@ public class Utils {
                 throw new DecodingException("Property type " + prop.getClass().getSimpleName() + " not allowed in packet " + packetType);
             }
         });
+    }
+
+    public static SocketAddress getRemoteAddressUnchecked(final SocketChannel socketChannel) {
+        try {
+            return socketChannel.getRemoteAddress();
+        } catch (IOException e) {
+            return null;
+        }
     }
 
 }
