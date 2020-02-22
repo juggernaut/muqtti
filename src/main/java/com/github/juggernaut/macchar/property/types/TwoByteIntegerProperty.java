@@ -27,6 +27,10 @@ public abstract class TwoByteIntegerProperty extends MqttProperty {
         ByteBufferUtil.encodeTwoByteInteger(buffer, value);
     }
 
+    public int getValue() {
+        return value;
+    }
+
     protected static int decodeValue(ByteBuffer buffer) {
         return ByteBufferUtil.decodeTwoByteInteger(buffer);
     }

@@ -32,8 +32,7 @@ public class ConnectDecodingTest {
         assertEquals(MqttPacket.PacketType.CONNECT, decodedPacket.getPacketType());
         final Connect connectPkt = (Connect) decodedPacket;
         assertEquals(AT_MOST_ONCE, connectPkt.getWillQoS());
-        assertTrue(connectPkt.getConnectProperties().isPresent());
-        final int receiveMax = connectPkt.getConnectProperties().map(ConnectProperties::getReceiveMaximum).orElse(-1);
+        final int receiveMax = connectPkt.getConnectProperties().getReceiveMaximum().getValue();
         assertEquals(20, receiveMax);
         assertTrue(connectPkt.getClientId().isEmpty());
         assertEquals(60, connectPkt.getKeepAlive());

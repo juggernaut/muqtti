@@ -54,25 +54,9 @@ public class Connect extends MqttPacket {
         validateConnectFlags(connectFlags, willQoS);
         final int keepAlive = decodeKeepAlive(buffer);
         final var properties = PropertiesDecoder.decode(buffer);
-        final int propertyLength = decodePropertyLength(buffer);
-        if (propertyLength > buffer.remaining()) {
-            throw new IllegalArgumentException("Invalid packet length based on property length");
-        }
-        ConnectProperties connectProperties = null;
-        if (propertyLength > 0) {
-            // Slicing the properties portion makes it easier to not overflow bounds and read invalid data if
-            // somehow the properties are faked to entice us to read past the property length.
-            final var propertiesSlice = buffer.slice();
-            propertiesSlice.limit(propertyLength);
-            connectProperties = new ConnectProperties();
-            connectProperties.decodeFromBuffer(propertiesSlice);
-            if (propertiesSlice.hasRemaining()) {
-                throw new IllegalArgumentException("Invalid properties length in CONNECT PACKET");
-            }
-            buffer.position(buffer.position() + propertyLength);
-        }
+        final var connectProperties = ConnectProperties.fromRawProperties(properties);
+
         // Payload
-        // TODO: length checks
         final String clientId = decodeClientId(buffer);
         WillData willData = null;
         if (hasWillFlag(connectFlags)) {
@@ -81,6 +65,7 @@ public class Connect extends MqttPacket {
         final String userName = decodeUsername(buffer, connectFlags);
         final byte[] password = decodePassword(buffer, connectFlags);
         if (buffer.hasRemaining()) {
+            // TODO: better exception here?
             throw new IllegalArgumentException("Extraneous length in buffer for CONNECT packet");
         }
         return new Connect(flags, keepAlive, connectFlags, connectProperties, clientId, userName, password, willQoS, willData);
@@ -205,8 +190,8 @@ public class Connect extends MqttPacket {
         return keepAlive;
     }
 
-    public Optional<ConnectProperties> getConnectProperties() {
-        return Optional.ofNullable(connectProperties);
+    public ConnectProperties getConnectProperties() {
+        return connectProperties;
     }
 
     public String getClientId() {

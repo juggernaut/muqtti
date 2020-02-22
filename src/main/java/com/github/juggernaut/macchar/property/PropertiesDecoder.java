@@ -1,8 +1,7 @@
 package com.github.juggernaut.macchar.property;
 
-import com.github.juggernaut.macchar.ByteBufferUtil;
 import com.github.juggernaut.macchar.VariableByteIntegerDecoder;
-import com.github.juggernaut.macchar.packet.ConnectProperties;
+import com.github.juggernaut.macchar.exception.DecodingException;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -18,7 +17,7 @@ public class PropertiesDecoder {
     public static List<MqttProperty> decode(final ByteBuffer buffer) {
         final int propertyLength = decodePropertyLength(buffer);
         if (propertyLength > buffer.remaining()) {
-            throw new IllegalArgumentException("Invalid packet length based on property length");
+            throw new DecodingException("Invalid packet length based on property length");
         }
         final List<MqttProperty> properties = new ArrayList<>(propertyLength);
         if (propertyLength > 0) {

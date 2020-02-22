@@ -7,6 +7,7 @@ import com.github.juggernaut.macchar.fsm.events.*;
 import com.github.juggernaut.macchar.MqttChannel;
 import com.github.juggernaut.macchar.QoS;
 import com.github.juggernaut.macchar.packet.*;
+import com.github.juggernaut.macchar.property.SessionExpiryInterval;
 import com.github.juggernaut.macchar.session.Session;
 import com.github.juggernaut.macchar.session.SessionManager;
 
@@ -82,6 +83,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private final List<Transition> transitions = List.of(
             transition(INIT, ESTABLISHED, PacketReceivedEvent.class, this::isConnect, this::handleConnect),
             transition(INIT, CHANNEL_DISCONNECTED, ExceptionEvent.class, this::isMalformedConnect, this::handleMalformedConnect),
+            transition(INIT, CHANNEL_DISCONNECTED, ExceptionEvent.class, this::isDecodingException, this::handleDecodingExceptionOnConnect),
             transition(ESTABLISHED, ESTABLISHED, PacketReceivedEvent.class, this::isSubscribe, this::handleSubscribe),
             transition(ESTABLISHED, ESTABLISHED, SendQoS0PublishEvent.class, p -> true, this::handleSendQoS0Publish),
             transition(ESTABLISHED, DISCONNECTED, PacketReceivedEvent.class, this::isPublishQoS2, this::handleQoS2PublishReceived),
@@ -232,7 +234,8 @@ public class MqttChannelStateMachine extends ActorStateMachine {
      */
     private boolean getOrCreateSession(final String effectiveClientId, final Connect connect) {
         final long sessionExpiryInterval = connect.getConnectProperties()
-                .map(ConnectProperties::getSessionExpiryInterval)
+                .getSessionExpiryInterval()
+                .map(SessionExpiryInterval::getValue)
                 // 3.1.2.11.2: If the Session Expiry Interval is absent the value 0 is used
                 .orElse(0L);
         final Session oldSession = sessionManager.getSession(effectiveClientId);
@@ -418,6 +421,12 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         if (session != null) {
             session.onDisconnect(Session.DisconnectCause.SERVER_INITIATED);
         }
+        mqttChannel.disconnect();
+    }
+
+    private void handleDecodingExceptionOnConnect(final ExceptionEvent event) {
+        assert isDecodingException(event);
+        mqttChannel.sendPacket(new ConnAck(ConnAck.ConnectReasonCode.MALFORMED_PACKET, false, Optional.empty(), Optional.empty()));
         mqttChannel.disconnect();
     }
 
