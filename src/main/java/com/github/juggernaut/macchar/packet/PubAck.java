@@ -1,6 +1,7 @@
 package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.ByteBufferUtil;
+import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.property.MqttProperty;
 import com.github.juggernaut.macchar.property.PropertiesDecoder;
 
@@ -80,7 +81,7 @@ public class PubAck extends MqttPacket {
 
     private static void validateFlags(int flags) {
         if (flags != 0) {
-            throw new IllegalArgumentException("PUBACK flags must be 0");
+            throw new DecodingException("PUBACK flags must be 0");
         }
     }
 

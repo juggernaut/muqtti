@@ -27,7 +27,7 @@ public class PropertiesDecoder {
             propertiesSlice.limit(propertyLength);
             decodeProperties(propertiesSlice, properties);
             if (propertiesSlice.hasRemaining()) {
-                throw new IllegalArgumentException("Properties length specified in packet is higher than the actual properties found");
+                throw new DecodingException("Properties length specified in packet is higher than the actual properties found");
             }
             buffer.position(buffer.position() + propertyLength);
         }
@@ -38,7 +38,7 @@ public class PropertiesDecoder {
         final var variableLengthDecoder = new VariableByteIntegerDecoder();
         boolean finished = variableLengthDecoder.decode(buffer);
         if (!finished) {
-            throw new IllegalArgumentException("Invalid property length in CONNECT packet");
+            throw new DecodingException("Invalid property length in CONNECT packet");
         }
         return variableLengthDecoder.getValue();
     }
@@ -47,7 +47,7 @@ public class PropertiesDecoder {
         final var variableLengthDecoder = new VariableByteIntegerDecoder();
         while (buffer.hasRemaining()) {
             if (!variableLengthDecoder.decode(buffer)) {
-                throw new IllegalArgumentException("Invalid property identifier length value");
+                throw new DecodingException("Invalid property identifier length value");
             }
             final int propertyIdentifier = variableLengthDecoder.getValue();
             variableLengthDecoder.reset();
@@ -102,7 +102,7 @@ public class PropertiesDecoder {
                     properties.add(AuthenticationMethod.fromBuffer(buffer));
                     break;
                 default:
-                    throw new IllegalArgumentException("Unknown property identifier " + propertyIdentifier);
+                    throw new DecodingException("Unknown property identifier " + propertyIdentifier);
             }
 
         }

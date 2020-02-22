@@ -64,10 +64,6 @@ public class Connect extends MqttPacket {
         }
         final String userName = decodeUsername(buffer, connectFlags);
         final byte[] password = decodePassword(buffer, connectFlags);
-        if (buffer.hasRemaining()) {
-            // TODO: better exception here?
-            throw new IllegalArgumentException("Extraneous length in buffer for CONNECT packet");
-        }
         return new Connect(flags, keepAlive, connectFlags, connectProperties, clientId, userName, password, willQoS, willData);
     }
 
@@ -137,18 +133,8 @@ public class Connect extends MqttPacket {
         return ByteBufferUtil.decodeTwoByteInteger(buffer);
     }
 
-    private static int decodePropertyLength(ByteBuffer buffer) {
-        final var variableLengthDecoder = new VariableByteIntegerDecoder();
-        boolean finished = variableLengthDecoder.decode(buffer);
-        if (!finished) {
-            throw new IllegalArgumentException("Invalid property length in CONNECT packet");
-        }
-        return variableLengthDecoder.getValue();
-    }
-
     private static String decodeClientId(final ByteBuffer buffer) {
-        var clientId = ByteBufferUtil.decodeUTF8String(buffer);
-        return clientId;
+        return ByteBufferUtil.decodeUTF8String(buffer);
     }
 
     private static String decodeUsername(final ByteBuffer buffer, final byte connectFlags) {

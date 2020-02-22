@@ -1,5 +1,7 @@
 package com.github.juggernaut.macchar.packet;
 
+import com.github.juggernaut.macchar.exception.DecodingException;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -15,7 +17,7 @@ public class PingReq extends MqttPacket {
 
     public static PingReq fromFixedHeaderOnly(int flags) {
         if (flags != 0) {
-            throw new IllegalArgumentException("PINGREQ flags must be 0");
+            throw new DecodingException("PINGREQ flags must be 0");
         }
         return PingReq.INSTANCE;
     }

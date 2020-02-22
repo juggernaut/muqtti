@@ -1,5 +1,6 @@
 package com.github.juggernaut.macchar.packet;
 
+import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.property.MqttProperty;
 import com.github.juggernaut.macchar.property.UserProperty;
 
@@ -110,7 +111,7 @@ public class Utils {
         mqttProperties.forEach(prop -> {
             if (!expectedPropertyTypes.contains(prop.getClass())) {
                 // TODO: better exception type
-                throw new IllegalArgumentException("Property type " + prop.getClass().getSimpleName() + " not allowed in packet " + packetType);
+                throw new DecodingException("Property type " + prop.getClass().getSimpleName() + " not allowed in packet " + packetType);
             }
         });
     }

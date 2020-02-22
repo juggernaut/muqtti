@@ -1,5 +1,7 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.exception.DecodingException;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -30,7 +32,7 @@ public class VariableByteIntegerDecoder {
             }
             // Variable byte integer can't be more than 4 bytes
             if (lengthSoFar == 4) {
-                throw new IllegalArgumentException("Invalid variable byte integer");
+                throw new DecodingException("Invalid variable byte integer");
             }
         }
         return finished;

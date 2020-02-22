@@ -1,5 +1,6 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.packet.Utils;
 
 import java.util.Objects;
@@ -16,12 +17,16 @@ public class TopicFilter {
     private TopicFilter() {}
 
     public static TopicFilter fromString(final String input) {
-        Utils.validateTopicFilter(input);
-        TopicFilter topicFilter = new TopicFilter();
-        topicFilter.filterString = input;
-        topicFilter.shareName = null;
-        checkForSharedFilter(topicFilter);
-        return topicFilter;
+        try {
+            Utils.validateTopicFilter(input);
+            TopicFilter topicFilter = new TopicFilter();
+            topicFilter.filterString = input;
+            topicFilter.shareName = null;
+            checkForSharedFilter(topicFilter);
+            return topicFilter;
+        } catch (final IllegalArgumentException e) {
+            throw new DecodingException(e.getMessage());
+        }
     }
 
     private static void checkForSharedFilter(final TopicFilter topicFilter) {

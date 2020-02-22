@@ -1,5 +1,6 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.packet.*;
 
 import java.nio.ByteBuffer;
@@ -108,10 +109,10 @@ public class MqttDecoder {
                 packet = Unsubscribe.fromBuffer(flags, remainingPacketBuffer);
                 break;
             default:
-                throw new IllegalArgumentException("Decoding packet type " + packetType + " is not yet implemented");
+                throw new DecodingException("Decoding packet type " + packetType + " is not yet implemented");
         }
         if (remainingPacketBuffer.hasRemaining()) {
-            throw new IllegalArgumentException("Extraneous length in buffer after decoding packet; this may be a corrupt stream");
+            throw new DecodingException("Extraneous length in buffer after decoding packet; this may be a corrupt stream");
         }
         if (packetConsumer != null) {
             packetConsumer.accept(packet);
@@ -128,7 +129,7 @@ public class MqttDecoder {
                 packet = Disconnect.fromFixedHeaderOnly(flags);
                 break;
             default:
-                throw new IllegalArgumentException("Packet type " + packetType + " cannot have zero remaining length");
+                throw new DecodingException("Packet type " + packetType + " cannot have zero remaining length");
         }
         if (packetConsumer != null) {
             packetConsumer.accept(packet);

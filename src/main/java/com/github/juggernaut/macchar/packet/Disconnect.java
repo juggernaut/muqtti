@@ -1,6 +1,7 @@
 package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.ByteBufferUtil;
+import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.property.MqttProperty;
 
 import java.nio.ByteBuffer;
@@ -15,7 +16,7 @@ public class Disconnect extends MqttPacket {
 
     public static Disconnect fromFixedHeaderOnly(int flags) {
         if (flags != 0) {
-            throw new IllegalArgumentException("DISCONNECT flags must be 0");
+            throw new DecodingException("DISCONNECT flags must be 0");
         }
         // 3.14.2.1: If the Remaining Length is less than 1 the value of 0x00 (Normal disconnection) is used
         return Disconnect.create(ReasonCode.NORMAL_DISCONNECTION);
@@ -60,7 +61,7 @@ public class Disconnect extends MqttPacket {
 
     public static Disconnect fromBuffer(int flags, ByteBuffer buffer) {
         if (flags != 0) {
-            throw new IllegalArgumentException("DISCONNECT flags must be 0");
+            throw new DecodingException("DISCONNECT flags must be 0");
         }
         final byte reasonCodeByte = buffer.get();
         final ReasonCode reasonCode = ReasonCode.fromIntValue(Byte.toUnsignedInt(reasonCodeByte));

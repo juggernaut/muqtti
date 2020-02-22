@@ -1,5 +1,6 @@
 package com.github.juggernaut.macchar.packet;
 
+import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.property.*;
 
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ public class WillProperties {
             } else if (prop instanceof UserProperty) {
                 userProperties.add((UserProperty) prop);
             } else {
-                throw new IllegalArgumentException("Unknown Will property type encountered");
+                throw new DecodingException("Unknown Will property type encountered");
             }
         }
         return new WillProperties(willDelayInterval, payloadFormatIndicator, messageExpiryInterval, contentType,

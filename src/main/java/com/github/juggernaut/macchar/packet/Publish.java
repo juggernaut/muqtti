@@ -2,6 +2,7 @@ package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.ByteBufferUtil;
 import com.github.juggernaut.macchar.QoS;
+import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.property.PropertiesDecoder;
 
 import java.nio.ByteBuffer;
@@ -71,7 +72,7 @@ public class Publish extends MqttPacket {
         int qos = (flags >> 1) & 0x03;
         if (qos == 3) {
             // A PUBLISH Packet MUST NOT have both QoS bits set to 1 [MQTT-3.3.1-4]
-            throw new IllegalArgumentException("QoS cannot have both bits set in PUBLISH packet flags");
+            throw new DecodingException("QoS cannot have both bits set in PUBLISH packet flags");
         }
     }
 

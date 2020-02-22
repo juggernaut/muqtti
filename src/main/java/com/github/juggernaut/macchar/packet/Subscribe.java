@@ -3,6 +3,7 @@ package com.github.juggernaut.macchar.packet;
 import com.github.juggernaut.macchar.ByteBufferUtil;
 import com.github.juggernaut.macchar.QoS;
 import com.github.juggernaut.macchar.TopicFilter;
+import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.property.PropertiesDecoder;
 
 import java.nio.ByteBuffer;
@@ -55,16 +56,16 @@ public class Subscribe extends MqttPacket {
         private static void validateOptions(byte options) {
             int qos = options & 0x03;
             if (qos == 3) {
-                throw new IllegalArgumentException("Invalid QoS value in topic filter subscription options");
+                throw new DecodingException("Invalid QoS value in topic filter subscription options");
             }
             int retainHandling = ((options >> 4) & 0x03);
             if (retainHandling == 3) {
-                throw new IllegalArgumentException("Invalid value for Retain Handling in subscription options");
+                throw new DecodingException("Invalid value for Retain Handling in subscription options");
             }
             // Bits 6 and 7 of the Subscription Options byte are reserved for future use. The Server MUST treat a SUBSCRIBE packet as malformed if any of Reserved bits in the Payload are non-zero [MQTT-3.8.3-5]
             final int reserved = ((options >> 6) & 0x03);
             if (reserved != 0) {
-                throw new IllegalArgumentException("Reserved bits in subscription options byte are non-zero");
+                throw new DecodingException("Reserved bits in subscription options byte are non-zero");
             }
         }
     }
@@ -102,7 +103,7 @@ public class Subscribe extends MqttPacket {
         final var subscribeProperties = SubscribeProperties.fromRawProperties(rawProperties);
         if (!buffer.hasRemaining()) {
             // The Payload MUST contain at least one Topic Filter and Subscription Options pair [MQTT-3.8.3-2]
-            throw new IllegalArgumentException("SUBSCRIBE packet must have a non-empty payload");
+            throw new DecodingException("SUBSCRIBE packet must have a non-empty payload");
         }
         final var subscriptions = decodeSubscriptions(buffer);
         return new Subscribe(flags, packetId, subscriptions, subscribeProperties);

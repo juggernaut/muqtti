@@ -1,5 +1,7 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.exception.DecodingException;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -77,7 +79,7 @@ public class ByteBufferUtil {
             return ByteBuffer.allocate(0);
         }
         if (buf.remaining() < binaryDataLen) {
-            throw new IllegalArgumentException("Less data available in bytebuffer than length indicate in binary data prefix");
+            throw new DecodingException("Less data available in bytebuffer than length indicate in binary data prefix");
         }
         final ByteBuffer sliced = buf.slice();
         sliced.limit(binaryDataLen);
