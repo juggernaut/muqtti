@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 /**
  * @author ameya
@@ -18,6 +19,8 @@ public class SharedSubscriptionState extends SubscriptionState implements Subscr
     private final AtomicInteger roundRobinPos = new AtomicInteger(0);
 
     private final List<SubscriptionListener> listeners = new CopyOnWriteArrayList<>();
+
+    private static final Logger LOGGER = Logger.getLogger(SharedSubscriptionState.class.getName());
 
     private SharedSubscriptionState(SubscriptionState subscriptionState, final Cursor sharedCursor) {
         super(subscriptionState.getSubscriptionId());
@@ -73,7 +76,7 @@ public class SharedSubscriptionState extends SubscriptionState implements Subscr
                 final List<Publish> message = new ArrayList<>(1);
                 subscriptionState.readQoS1Messages(sharedCursor, 1, message);
                 if (message.isEmpty()) {
-                    System.err.println("Got notification for QoS1 message, but readQoS1Messages did not return it");
+                    LOGGER.warning("Got notification for QoS1 message, but readQoS1Messages did not return it");
                 } else {
                     listener.onMatchedQoS0Message(message.get(0));
                 }

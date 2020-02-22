@@ -8,7 +8,7 @@ import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
+import java.util.logging.Level;
 
 /**
  * @author ameya
@@ -36,7 +36,7 @@ public class MqttTlsChannel extends MqttChannel {
     @Override
     public void onRead(ByteBuffer src) {
         if (src.remaining() > (cipherData.capacity() - cipherData.position())) {
-            System.out.println("Enlarging cipherData");
+            log(Level.FINER, () -> "Enlarging cipherData");
             ByteBuffer b = ByteBuffer.allocate(src.remaining() + cipherData.position());
             cipherData.flip();
             b.put(cipherData);
@@ -51,7 +51,7 @@ public class MqttTlsChannel extends MqttChannel {
         try {
             final SSLEngineResult result = sslEngine.unwrap(cipherData, applicationData);
             if (result.bytesConsumed() == 0 && result.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
-                System.out.println("Not enough bytes to make a TLS record during handshake");
+                log(Level.FINER, () -> "Not enough bytes to make a TLS record during handshake");
                 return;
             }
             handleHandshake(result.getHandshakeStatus());
@@ -82,18 +82,19 @@ public class MqttTlsChannel extends MqttChannel {
                         applicationData.flip();
                         super.onRead(applicationData);
                         if (applicationData.hasRemaining()) {
-                            System.out.println("Application didn't read all data");
+                            log(Level.SEVERE, () -> "Application didn't read all unwrapped TLS data; this is a programming error!");
                         }
                         applicationData.clear();
                     }
                     cipherData.compact();
                     break;
                 case CLOSED:
-                    System.out.println("Channel already closed..");
+                    log(Level.FINE, () -> "Can't unwrap TLS data, since channel is already closed..");
                     break;
             }
         } catch (SSLException e) {
-            e.printStackTrace();
+            // TODO: better exception here
+            throw new RuntimeException(e);
         }
 
     }
@@ -112,16 +113,17 @@ public class MqttTlsChannel extends MqttChannel {
                 try {
                     sendOutboundHandshakeData();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    // TODO: better exception here
+                    throw new RuntimeException(e);
                 }
                 break;
             case FINISHED:
-                System.out.println("Finished TLS handshake");
+                log(Level.FINER, () -> "Finished TLS handshake");
                 break;
             case NOT_HANDSHAKING:
                 break;
             default:
-                System.out.println("Unknown handshake status " + handshakeStatus);
+                log(Level.SEVERE, () -> "Unknown handshake status " + handshakeStatus);
         }
     }
 
@@ -177,7 +179,7 @@ public class MqttTlsChannel extends MqttChannel {
     }
 
     private void handleNonApplicationData() throws IOException {
-        // TODO: this is only generating handshake data now, so what should be the source buffer? just using a dummy buffer for now
+        // NOTE: this is only generating handshake data now, so what should be the source buffer? just using a dummy buffer for now
         sslEngine.wrap(ByteBuffer.allocate(0), outboundData);
         outboundData.flip();
         write(outboundData);
@@ -189,18 +191,17 @@ public class MqttTlsChannel extends MqttChannel {
             final SSLEngineResult result = sslEngine.wrap(encoded, outboundData);
             switch (result.getStatus()) {
                 case BUFFER_OVERFLOW:
-                    // TODO: debug
-                    System.out.println("Enlarging outbound data buffer");
+                    log(Level.FINER, () -> "Enlarging outbound data buffer");
                     outboundData = enlargeBuffer(outboundData, sslEngine.getSession().getPacketBufferSize());
                     return doWrap(encoded);
                 case CLOSED:
-                    System.out.println("Channel already closed, can't write to it");
+                    log(Level.WARNING, () -> "SSLEngine already closed, can't write to it");
             }
             return result;
         } catch (SSLException e) {
-            e.printStackTrace();
             // TODO: how to handle this?
             throw new RuntimeException(e);
         }
     }
+
 }

@@ -11,6 +11,7 @@ import com.github.juggernaut.macchar.property.types.FourByteIntegerProperty;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +23,8 @@ public class SessionManager {
     private final SubscriptionManager subscriptionManager;
 
     private static final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+
+    private static final Logger LOGGER = Logger.getLogger(SessionManager.class.getName());
 
     public SessionManager(SubscriptionManager subscriptionManager) {
         this.subscriptionManager = subscriptionManager;
@@ -37,7 +40,7 @@ public class SessionManager {
     }
 
     public Session removeSession(final String id) {
-        System.out.println("Removing session " + id);
+        LOGGER.fine(() -> "Removing session " + id);
         return sessionMap.remove(id);
     }
 
@@ -161,7 +164,7 @@ public class SessionManager {
             // TODO: we're only handling new subscriptions here, need to handle existing subscriptions according to
             // TODO: [MQTT-3.8.4-3]
             subscribe.getSubscriptions().stream()
-                    .filter(subscription -> !sessionSubscriptions.containsKey(subscription.getFilter().getFilterString()))
+                    .filter(subscription -> !sessionSubscriptions.containsKey(subscription.getFilter()))
                     .forEach(subscription -> {
                         final var subscriptionState = subscriptionManager.getOrCreateSubscription(subscription.getFilter());
                         final var sessionSubscription = SessionSubscription.from(subscription,
@@ -170,7 +173,7 @@ public class SessionManager {
                                 subscriptionState);
                         // TODO: is there anything different to do here re: shared subscription?
                         sessionSubscriptions.put(subscription.getFilter(), sessionSubscription);
-                        System.out.println("Added session subscription for filter " + subscription.getFilter().getFilterString());
+                        LOGGER.fine(() -> String.format("[session-id=%s] Added session subscription for filter %s", id, subscription.getFilter().getFilterString()));
                     });
         }
 
@@ -230,7 +233,7 @@ public class SessionManager {
             if (expired) {
                 throw new IllegalStateException("Cannot reactivate expired session");
             }
-            System.out.println("Reactivating session " + id);
+            LOGGER.fine(() -> "Reactivating session " + id);
             if (sessionExpiryTask != null) {
                 sessionExpiryTask.cancel(true);
                 sessionExpiryTask = null;

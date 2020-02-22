@@ -107,11 +107,6 @@ public class MqttChannelStateMachine extends ActorStateMachine {
             transition(DISCONNECTED, CHANNEL_DISCONNECTED, ChannelDisconnectedEvent.class, p -> true, p -> {})
     );
 
-    public MqttChannelStateMachine(MqttChannel mqttChannel, SessionManager sessionManager) {
-        this.mqttChannel = mqttChannel;
-        this.sessionManager = sessionManager;
-    }
-
     public MqttChannelStateMachine(SessionManager sessionManager) {
         this.sessionManager = sessionManager;
     }
@@ -123,7 +118,6 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     @Override
     public void init() {
         currentState = INIT;
-        log(Level.FINER, () -> "MQTT state machine initialized");
     }
 
     @Override
@@ -437,11 +431,11 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     }
 
     private void log(Level level, Throwable t, Supplier<String> messageSupplier) {
-        LOGGER.log(level, t, () -> getLogLinePrefix() + messageSupplier.get());
+        LOGGER.log(level, t, () -> getLogLinePrefix() + " " + messageSupplier.get());
     }
 
     private void log(Level level, Supplier<String> messageSupplier) {
-        LOGGER.log(level, () -> getLogLinePrefix() + messageSupplier.get());
+        LOGGER.log(level, () -> getLogLinePrefix() + " " + messageSupplier.get());
     }
 
     private String getLogLinePrefix() {

@@ -22,6 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,10 +70,10 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
         } catch (final MqttException e) {
             mqttChannelActor.sendMessage(new ExceptionEvent(e));
         } catch (final BufferUnderflowException e) {
-            LOGGER.log(Level.FINE, "Buffer underflow (malformed packet) occurred during decoding", e);
+            log(Level.FINE, e, () -> "Buffer underflow (malformed packet) occurred during decoding");
             mqttChannelActor.sendMessage(new ExceptionEvent(new DecodingException("Protocol decode error")));
         } catch (final Exception e) {
-            LOGGER.log(Level.WARNING, "Unhandled exception occurred during decoding", e);
+            log(Level.WARNING, e, () -> "Unhandled exception occurred during decoding");
             // TODO: disconnect here, send message to actor
         }
     }
@@ -86,12 +87,12 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
 
     private void scheduleKeepAliveTimeout() {
         timerFuture = timerService.schedule(() -> {
-            LOGGER.info(() -> "Disconnecting channel " + getRemoteAddress() + " because keepalive timeout expired");
+            log(Level.INFO, () -> "Disconnecting channel because keepalive timeout expired");
             try {
                 // TODO: should be different for TLS channel
                 socketChannel.close();
             } catch (IOException e) {
-                LOGGER.log(Level.INFO, e, () -> "Failed to close channel " + getRemoteAddress());
+                log(Level.INFO, e, () -> "Failed to close channel");
             }
         }, keepAliveTimeout, TimeUnit.SECONDS);
     }
@@ -110,7 +111,7 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
 
     @Override
     public void accept(MqttPacket mqttPacket) {
-        LOGGER.finest(() -> "Successfully decoded packet of type " + mqttPacket.getPacketType());
+        log(Level.FINEST, () -> "Successfully decoded packet of type " + mqttPacket.getPacketType());
         mqttChannelActor.sendMessage(new PacketReceivedEvent(mqttPacket));
     }
 
@@ -150,7 +151,7 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
         try {
             socketChannel.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            log(Level.WARNING, e, () -> "Failed to close socket channel");
         }
     }
 
@@ -174,7 +175,7 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
                     selectionKey.interestOpsOr(SelectionKey.OP_WRITE);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                log(Level.SEVERE, e, () -> "I/O error writing to socket");
             }
         } else {
             enlargeWriteBuffer(buffers);
@@ -199,5 +200,17 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
         // This is a little roundabout but we essentially want to funnel all writes through the actor so that
         // we get serialized writes
         mqttChannelActor.sendMessage(new ChannelWriteReadyEvent());
+    }
+
+    protected void log(Level level, Throwable t, Supplier<String> messageSupplier) {
+        LOGGER.log(level, t, () -> getLogPrefix() + " " + messageSupplier.get());
+    }
+
+    protected void log(Level level, Supplier<String> messageSupplier) {
+        LOGGER.log(level, () -> getLogPrefix() + " " + messageSupplier.get());
+    }
+
+    private String getLogPrefix() {
+        return "[remote-address="+ getRemoteAddress() + "]";
     }
 }
