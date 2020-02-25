@@ -40,7 +40,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
     private int currentPublishPacketId = 1;
     private int earliestOutstandingPacketId = -1;
 
-    private int clientReceiveMaximum = 10; // default
+    private int clientReceiveMaximum;
 
     private int outstandingQoS1Messages = 0;
 
@@ -202,6 +202,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         }
 
         mqttChannel.setKeepAliveTimeout((int) (keepAliveInSeconds * 1.5));
+        clientReceiveMaximum = connect.getConnectProperties().getReceiveMaximum().getValue();
 
         final var connAck = new ConnAck(ConnAck.ConnectReasonCode.SUCCESS, sessionPresent, Optional.ofNullable(assignedClientId), keepAliveProperty);
         mqttChannel.sendPacket(connAck);
