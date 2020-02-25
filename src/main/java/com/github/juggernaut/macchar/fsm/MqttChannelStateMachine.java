@@ -7,10 +7,14 @@ import com.github.juggernaut.macchar.fsm.events.*;
 import com.github.juggernaut.macchar.MqttChannel;
 import com.github.juggernaut.macchar.packet.QoS;
 import com.github.juggernaut.macchar.packet.*;
+import com.github.juggernaut.macchar.property.MessageExpiryInterval;
+import com.github.juggernaut.macchar.property.MqttProperty;
 import com.github.juggernaut.macchar.property.SessionExpiryInterval;
+import com.github.juggernaut.macchar.session.MessageEntry;
 import com.github.juggernaut.macchar.session.Session;
 import com.github.juggernaut.macchar.session.SessionManager;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -209,10 +213,10 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         log(Level.FINER, () -> "Sent CONNACK");
 
         if (sessionPresent) {
-            log(Level.FINER, () ->"Detected existing session for " + session.getId());
+            log(Level.FINE, () ->"Detected existing session for " + session.getId());
             session.reactivate(getActor());
             // If there are available stored QoS1 messages for this session, start sending them
-            log(Level.FINER, () -> "Sending stored QoS1 messages if available");
+            log(Level.FINE, () -> "Sending stored QoS1 messages if available");
             readAndSendQoS1MessagesIfAvailable();
         }
     }
@@ -306,7 +310,8 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         final var receivedPublish = event.getMsg();
         final var payloadToSend = receivedPublish.getPayload().slice();
         final var publishToSend = Publish.create(QoS.AT_MOST_ONCE, false, false, receivedPublish.getTopicName(),
-                Optional.empty(), payloadToSend, receivedPublish.getPublishProperties().getPropertiesToForwardUnaltered());
+                Optional.empty(), payloadToSend,
+                PublishProperties.fromRawProperties(receivedPublish.getPublishProperties().getPropertiesToForwardUnaltered()));
         mqttChannel.sendPacket(publishToSend);
         log(Level.FINER, () -> "Sent QoS0 publish msg");
     }
@@ -359,11 +364,26 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         if (availableMessages.size() > 0) {
             earliestOutstandingPacketId = currentPublishPacketId;
             availableMessages.stream()
-                    .map(m -> Publish.create(QoS.AT_LEAST_ONCE, false, false, m.getTopicName(), Optional.of(incrementPublishPacketId()), m.getPayload().slice(),
-                            m.getPublishProperties().getPropertiesToForwardUnaltered()))
+                    .map(this::createNewPublishFromStoredEntry)
                     .forEach(publish -> mqttChannel.sendPacket(publish));
             outstandingQoS1Messages += availableMessages.size();
         }
+    }
+
+    private Publish createNewPublishFromStoredEntry(MessageEntry entry) {
+        assert !entry.isExpired();
+        final var publishMsg = entry.getMessage();
+        final List<MqttProperty> newProps = new ArrayList<>();
+        publishMsg.getPublishProperties().getMessageExpiryInterval().ifPresent(expiryInterval -> {
+            // The PUBLISH packet sent to a Client by the Server MUST contain a Message Expiry Interval set to the received value minus the time that the Application Message has been waiting in the Server [MQTT-3.3.2-6]
+            final long waitTimeSeconds = (System.currentTimeMillis() - entry.getReceivedTime()) / 1000;
+            final long newMessageExpiryInterval = Math.max(0, expiryInterval.getValue() - waitTimeSeconds);
+            newProps.add(new MessageExpiryInterval(newMessageExpiryInterval));
+        });
+        final var unalteredProps = publishMsg.getPublishProperties().getPropertiesToForwardUnaltered();
+        newProps.addAll(unalteredProps);
+        return Publish.create(QoS.AT_LEAST_ONCE, false, false, publishMsg.getTopicName(), Optional.of(incrementPublishPacketId()),
+                publishMsg.getPayload().slice(), PublishProperties.fromRawProperties(newProps));
     }
 
     private void handlePubAckReceived(final PacketReceivedEvent event) {

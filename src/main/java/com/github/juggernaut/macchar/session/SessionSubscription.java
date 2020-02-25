@@ -67,7 +67,7 @@ public class SessionSubscription implements SubscriptionListener {
         session.getActor().sendMessage(new QoS1PublishMatchedEvent());
     }
 
-    public void readQoS1Messages(final List<Publish> messages, final int maxMessages) {
+    public void readQoS1Messages(final List<MessageEntry> messages, final int maxMessages) {
         assert cursor.isPresent();
         subscriptionState.readQoS1Messages(cursor.get(), maxMessages, messages);
     }

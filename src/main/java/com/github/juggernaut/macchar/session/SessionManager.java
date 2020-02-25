@@ -211,9 +211,9 @@ public class SessionManager {
         }
 
         @Override
-        public List<Publish> readAvailableQoS1Messages(int maxMessages) {
+        public List<MessageEntry> readAvailableQoS1Messages(int maxMessages) {
             assert maxMessages > 0;
-            final List<Publish> messages = new ArrayList<>();
+            final List<MessageEntry> messages = new ArrayList<>();
             int remaining = maxMessages;
             for (SessionSubscription s: sessionSubscriptions.values()) {
                 if (s.getSubscriptionMaxQoS() == QoS.AT_MOST_ONCE) {

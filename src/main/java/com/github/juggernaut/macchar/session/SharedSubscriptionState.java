@@ -73,12 +73,12 @@ public class SharedSubscriptionState extends SubscriptionState implements Subscr
         final var listener = chooseListener();
         if (listener != null) {
             if (listener.getSubscriptionMaxQoS() == QoS.AT_MOST_ONCE) {
-                final List<Publish> message = new ArrayList<>(1);
+                final List<MessageEntry> message = new ArrayList<>(1);
                 subscriptionState.readQoS1Messages(sharedCursor, 1, message);
                 if (message.isEmpty()) {
                     LOGGER.warning("Got notification for QoS1 message, but readQoS1Messages did not return it");
                 } else {
-                    listener.onMatchedQoS0Message(message.get(0));
+                    listener.onMatchedQoS0Message(message.get(0).getMessage());
                 }
             } else {
                 listener.onMatchedQoS1Message();

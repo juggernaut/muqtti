@@ -3,8 +3,10 @@ package com.github.juggernaut.macchar.session;
 import com.github.juggernaut.macchar.packet.QoS;
 import com.github.juggernaut.macchar.packet.Publish;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 /**
  * @author ameya
@@ -13,7 +15,7 @@ public class SubscriptionState {
 
 
     private final SubscriptionId subscriptionId;
-    private final CircularBuffer<Publish> messageBuffer = new CircularBuffer<>(1024);
+    private final CircularBuffer<MessageEntry> messageBuffer = new CircularBuffer<>(1024);
     private final List<Cursor> cursors = new CopyOnWriteArrayList<>();
     private final List<SubscriptionListener> listeners = new CopyOnWriteArrayList<>();
 
@@ -53,7 +55,7 @@ public class SubscriptionState {
 
     private void save(Publish msg) {
         synchronized(this) {
-            final int newPos = messageBuffer.put(msg);
+            final int newPos = messageBuffer.put(MessageEntry.forReceivedMessage(msg));
             cursors.forEach(cursor -> {
                 // The write pos has wrapped around and bumped against our cursor, so invalidate it.
                 // TODO: this logic is wrong! (off by one error)
@@ -65,12 +67,12 @@ public class SubscriptionState {
         fanoutQoS1(msg);
     }
 
-    public synchronized void readQoS1Messages(Cursor cursor, int numMessages, List<Publish> messages) {
+    public synchronized void readQoS1Messages(Cursor cursor, int numMessages, List<MessageEntry> entries) {
         assert numMessages > 0;
         if (!cursor.isValid()) {
             throw new IllegalStateException("Cursor " + cursor + " is invalidated, session state needs to be invalidated as well");
         }
-        final int readUntilPos = messageBuffer.take(cursor.getPosition(), messages);
+        final int readUntilPos = messageBuffer.take(cursor.getPosition(), entries, entry -> !entry.isExpired());
         cursor.setPosition(readUntilPos);
     }
 

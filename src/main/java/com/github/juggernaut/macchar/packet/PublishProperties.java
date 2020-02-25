@@ -83,10 +83,9 @@ public class PublishProperties {
         return rawProperties;
     }
 
-    public PublishProperties getPropertiesToForwardUnaltered() {
-        final var rawUnaltered = rawProperties.stream()
+    public List<MqttProperty> getPropertiesToForwardUnaltered() {
+        return rawProperties.stream()
                 .filter(prop -> FORWARD_UNALTERED_PROPERTY_TYPES.contains(prop.getClass()))
                 .collect(Collectors.toList());
-        return new PublishProperties(rawUnaltered);
     }
 }

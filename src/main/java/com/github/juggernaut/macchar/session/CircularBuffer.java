@@ -1,6 +1,7 @@
 package com.github.juggernaut.macchar.session;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * @author ameya
@@ -43,21 +44,24 @@ public class CircularBuffer<E> {
      * @param startPos position in the buffer until which data has already been read
      * @return the position until which data has been read
      */
-    public int take(int startPos, List<E> result) {
-        return take(startPos, result, -1);
+    public int take(int startPos, List<E> result, Predicate<E> filter) {
+        return take(startPos, result, -1, filter);
     }
 
-    public int take(int startPos, List<E> result, int numElements) {
+    public int take(int startPos, List<E> result, int numElements, Predicate<E> filter) {
         assert startPos >= -1 && startPos < capacity;
         assert numElements == -1 || numElements > 0;
         int elementsReadSoFar = 0;
         int readUntilPos = startPos;
         int i = (startPos + 1) % capacity;
         while (i != position && (numElements == -1 || elementsReadSoFar < numElements)) {
-            result.add((E) array[i]);
+            final E item = (E) array[i];
+            if (filter.test(item)) {
+                result.add(item);
+                elementsReadSoFar++;
+            }
             readUntilPos = (readUntilPos + 1) % capacity;
             i = (i + 1) % capacity;
-            elementsReadSoFar++;
         }
         return readUntilPos;
     }

@@ -43,7 +43,7 @@ public interface Session {
 
     void remove();
 
-    List<Publish> readAvailableQoS1Messages(int maxMessages);
+    List<MessageEntry> readAvailableQoS1Messages(int maxMessages);
 
     /**
      * Revive an existing stored session when the clientId connects again (which will be a new actor)

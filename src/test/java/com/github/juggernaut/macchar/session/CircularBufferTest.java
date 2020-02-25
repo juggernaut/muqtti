@@ -17,7 +17,7 @@ public class CircularBufferTest {
     public void testBufferEmpty() {
         final var buffer = new CircularBuffer<String>(3);
         final var result = new ArrayList<String>();
-        int readUntilPos = buffer.take(-1, result);
+        int readUntilPos = buffer.take(-1, result, e -> true);
         assertEquals(-1, readUntilPos);
         assertTrue(result.isEmpty());
     }
@@ -28,7 +28,7 @@ public class CircularBufferTest {
         int nextPos = buffer.put("hello");
         assertEquals(1, nextPos);
         final var result = new ArrayList<String>();
-        int readUntilPos = buffer.take(-1, result);
+        int readUntilPos = buffer.take(-1, result, e -> true);
         assertEquals(0, readUntilPos);
         assertEquals(List.of("hello"), result);
     }
@@ -40,7 +40,7 @@ public class CircularBufferTest {
         int nextPos = buffer.put("hello");
         assertEquals(1, nextPos);
         final var result = new ArrayList<String>();
-        int readUntilPos = buffer.take(-1, result);
+        int readUntilPos = buffer.take(-1, result, e -> true);
         assertEquals(0, readUntilPos);
         assertEquals(List.of("hello"), result);
 
@@ -51,13 +51,13 @@ public class CircularBufferTest {
         assertEquals(0, nextPos);
 
         final var result2 = new ArrayList<String>();
-        readUntilPos = buffer.take(readUntilPos, result2);
+        readUntilPos = buffer.take(readUntilPos, result2, e -> true);
         assertEquals(2, readUntilPos);
         assertEquals(List.of("world", "foo"), result2);
 
         // Read again, should come up empty
         final var result3 = new ArrayList<String>();
-        readUntilPos = buffer.take(readUntilPos, result3);
+        readUntilPos = buffer.take(readUntilPos, result3, e -> true);
         // no change in readUntilPos
         assertEquals(2, readUntilPos);
         assertTrue(result3.isEmpty());
