@@ -1,6 +1,5 @@
 package com.github.juggernaut.macchar;
 
-import com.github.juggernaut.macchar.packet.ConnectProperties;
 import com.github.juggernaut.macchar.packet.Connect;
 import com.github.juggernaut.macchar.packet.MqttPacket;
 import com.github.juggernaut.macchar.packet.WillData;
@@ -10,8 +9,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.github.juggernaut.macchar.QoS.AT_LEAST_ONCE;
-import static com.github.juggernaut.macchar.QoS.AT_MOST_ONCE;
+import static com.github.juggernaut.macchar.packet.QoS.AT_LEAST_ONCE;
+import static com.github.juggernaut.macchar.packet.QoS.AT_MOST_ONCE;
 import static org.junit.Assert.*;
 
 /**

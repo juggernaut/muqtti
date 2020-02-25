@@ -1,6 +1,6 @@
 package com.github.juggernaut.macchar.session;
 
-import com.github.juggernaut.macchar.QoS;
+import com.github.juggernaut.macchar.packet.QoS;
 import com.github.juggernaut.macchar.fsm.events.QoS1PublishMatchedEvent;
 import com.github.juggernaut.macchar.fsm.events.SendQoS0PublishEvent;
 import com.github.juggernaut.macchar.packet.Publish;

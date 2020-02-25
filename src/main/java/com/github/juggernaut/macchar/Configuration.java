@@ -1,5 +1,7 @@
 package com.github.juggernaut.macchar;
 
+import com.github.juggernaut.macchar.packet.QoS;
+
 /**
  * @author ameya
  */

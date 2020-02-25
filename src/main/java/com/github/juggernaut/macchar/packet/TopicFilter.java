@@ -1,7 +1,6 @@
-package com.github.juggernaut.macchar;
+package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.exception.DecodingException;
-import com.github.juggernaut.macchar.packet.Utils;
 
 import java.util.Objects;
 import java.util.Optional;

@@ -1,10 +1,8 @@
 package com.github.juggernaut.macchar.session;
 
-import com.github.juggernaut.macchar.QoS;
+import com.github.juggernaut.macchar.packet.QoS;
 import com.github.juggernaut.macchar.packet.Publish;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 

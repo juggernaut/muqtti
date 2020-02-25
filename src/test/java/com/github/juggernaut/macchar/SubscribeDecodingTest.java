@@ -1,6 +1,7 @@
 package com.github.juggernaut.macchar;
 
 import com.github.juggernaut.macchar.packet.MqttPacket;
+import com.github.juggernaut.macchar.packet.QoS;
 import com.github.juggernaut.macchar.packet.Subscribe;
 import org.junit.Test;
 

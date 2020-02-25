@@ -1,8 +1,8 @@
 package com.github.juggernaut.macchar.session;
 
 import com.github.juggernaut.macchar.Actor;
-import com.github.juggernaut.macchar.QoS;
-import com.github.juggernaut.macchar.TopicFilter;
+import com.github.juggernaut.macchar.packet.QoS;
+import com.github.juggernaut.macchar.packet.TopicFilter;
 import com.github.juggernaut.macchar.fsm.events.SendDisconnectEvent;
 import com.github.juggernaut.macchar.fsm.events.SendUnsubAckEvent;
 import com.github.juggernaut.macchar.packet.*;

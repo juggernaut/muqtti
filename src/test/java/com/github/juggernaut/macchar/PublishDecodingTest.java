@@ -7,7 +7,7 @@ import org.junit.Test;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.github.juggernaut.macchar.QoS.AT_MOST_ONCE;
+import static com.github.juggernaut.macchar.packet.QoS.AT_MOST_ONCE;
 import static com.github.juggernaut.macchar.packet.MqttPacket.PacketType.PUBLISH;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

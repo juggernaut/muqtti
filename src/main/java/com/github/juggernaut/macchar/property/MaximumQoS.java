@@ -1,6 +1,6 @@
 package com.github.juggernaut.macchar.property;
 
-import com.github.juggernaut.macchar.QoS;
+import com.github.juggernaut.macchar.packet.QoS;
 import com.github.juggernaut.macchar.property.types.ByteProperty;
 
 /**

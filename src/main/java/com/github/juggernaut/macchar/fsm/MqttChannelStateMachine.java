@@ -5,7 +5,7 @@ import com.github.juggernaut.macchar.exception.DecodingException;
 import com.github.juggernaut.macchar.exception.MalformedPacketException;
 import com.github.juggernaut.macchar.fsm.events.*;
 import com.github.juggernaut.macchar.MqttChannel;
-import com.github.juggernaut.macchar.QoS;
+import com.github.juggernaut.macchar.packet.QoS;
 import com.github.juggernaut.macchar.packet.*;
 import com.github.juggernaut.macchar.property.SessionExpiryInterval;
 import com.github.juggernaut.macchar.session.Session;

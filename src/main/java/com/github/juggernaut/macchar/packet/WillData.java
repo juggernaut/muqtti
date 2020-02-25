@@ -1,7 +1,5 @@
 package com.github.juggernaut.macchar.packet;
 
-import com.github.juggernaut.macchar.QoS;
-
 import java.nio.ByteBuffer;
 
 /**

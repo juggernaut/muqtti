@@ -1,7 +1,6 @@
 package com.github.juggernaut.macchar.packet;
 
 import com.github.juggernaut.macchar.ByteBufferUtil;
-import com.github.juggernaut.macchar.TopicFilter;
 import com.github.juggernaut.macchar.property.PropertiesDecoder;
 import com.github.juggernaut.macchar.property.UserProperty;
 

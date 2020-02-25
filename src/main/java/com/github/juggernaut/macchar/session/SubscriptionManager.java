@@ -1,6 +1,6 @@
 package com.github.juggernaut.macchar.session;
 
-import com.github.juggernaut.macchar.TopicFilter;
+import com.github.juggernaut.macchar.packet.TopicFilter;
 import com.github.juggernaut.macchar.packet.Publish;
 import com.github.juggernaut.macchar.packet.Utils;
 
