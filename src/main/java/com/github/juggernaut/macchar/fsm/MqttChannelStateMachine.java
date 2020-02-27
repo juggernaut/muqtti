@@ -225,6 +225,7 @@ public class MqttChannelStateMachine extends ActorStateMachine {
         // TODO: actually check disconnect reason code from the received DISCONNECT here
         log(Level.FINE, () -> "Session " + session.getId() + " disconnected gracefully");
         session.onDisconnect(Session.DisconnectCause.NORMAL_CLIENT_INITIATED);
+        mqttChannel.disconnect();
     }
 
     /**

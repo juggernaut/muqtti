@@ -85,6 +85,12 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
         }
     }
 
+    private void cancelTimer() {
+        if (timerFuture != null) {
+            timerFuture.cancel(false);
+        }
+    }
+
     private void scheduleKeepAliveTimeout() {
         timerFuture = timerService.schedule(() -> {
             log(Level.INFO, () -> "Disconnecting channel because keepalive timeout expired");
@@ -149,6 +155,7 @@ public class MqttChannel implements ChannelListener, Consumer<MqttPacket> {
 
     protected void closeChannel() {
         try {
+            cancelTimer();
             socketChannel.close();
         } catch (IOException e) {
             log(Level.WARNING, e, () -> "Failed to close socket channel");
