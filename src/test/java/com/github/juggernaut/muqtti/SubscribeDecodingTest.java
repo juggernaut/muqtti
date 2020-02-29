@@ -46,14 +46,14 @@ public class SubscribeDecodingTest {
         final var topicFilters = subscribe.getSubscriptions();
         assertEquals(2, topicFilters.size());
         final var filter1 = topicFilters.get(0);
-        assertEquals("a/b", filter1.getFilter());
+        assertEquals("a/b", filter1.getFilter().getFilterString());
         assertEquals(QoS.AT_LEAST_ONCE, filter1.getQoS());
         assertFalse(filter1.hasNoLocalOption());
         assertFalse(filter1.hasRetainAsPublishedOption());
         assertEquals(0, filter1.getRetainHandlingOption());
 
         final var filter2 = topicFilters.get(1);
-        assertEquals("c/d", filter2.getFilter());
+        assertEquals("c/d", filter2.getFilter().getFilterString());
         assertEquals(QoS.EXACTLY_ONCE, filter2.getQoS());
         assertFalse(filter2.hasNoLocalOption());
         assertFalse(filter2.hasRetainAsPublishedOption());
