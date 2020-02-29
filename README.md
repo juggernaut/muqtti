@@ -43,7 +43,7 @@ mvn install
 java -jar muqtti.jar
 ```
 
-Examples
+Usage
 ===
 
 You can use pub/sub commands bundled with [mosquitto](https://mosquitto.org) as clients to Muqtti.
@@ -61,7 +61,7 @@ mosquitto_pub -V 5 -t vehicles/teslas/1 -m 'wake up'
 *NOTE*: You'll need to specify `-V 5` because `mosquitto` tries to connect using MQTT 3.1.1 by default, and Muqtti only supports MQTT v5.0
 
 Shared subscriptions
-==
+--
 
 An interesting addition to MQTT v5.0 is the concept of shared subscriptions. With shared subscriptions, you can have multiple clients subscribed
 to the same topic filter and have messages load-balanced among the clients. You can test this feature out by running two separate 
