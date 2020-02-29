@@ -15,7 +15,7 @@ Features
     * NACK packets
 
 Not Supported
-===
+---
 
 * QoS 2
 * Retained messages
@@ -23,7 +23,7 @@ Not Supported
 * Websockets
 
 Use cases
-===
+---
 
 * As a lightweight broker for local development
 * Embedded broker for unit tests (JUnit rule coming soon)
