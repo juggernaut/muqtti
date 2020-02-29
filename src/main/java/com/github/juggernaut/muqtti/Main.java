@@ -22,8 +22,14 @@ public class Main {
     // NOTE: not supporting TLSv1.3 yet..
     private static final String[] ENABLED_PROTOCOLS = new String[] {"TLSv1.1", "TLSv1.2"};
 
+    private static final String PROP_PREFIX = "muqtti.";
+    private static final String PORT_PROP = PROP_PREFIX + "port";
+    private static final String CERTFILE_PROP = PROP_PREFIX + "certfile";
+    private static final String KEYFILE_PROP = PROP_PREFIX + "keyfile";
+    private static final String CAFILE_PROP = PROP_PREFIX + "cafile";
+
     public static void main(String[] args) throws Exception {
-        final int port = Integer.getInteger("port", 1883);
+        final int port = Integer.getInteger(PORT_PROP, 1883);
         final Optional<Supplier<SSLEngine>> sslContext = getSSLEngineSupplier();
         final var forkJoinPool = Executors.newWorkStealingPool();
         final var actorSystem = new ActorSystem(forkJoinPool);
@@ -34,8 +40,8 @@ public class Main {
     }
 
     private static Optional<Supplier<SSLEngine>> getSSLEngineSupplier() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException, KeyStoreException, UnrecoverableKeyException, KeyManagementException {
-        final String certFile = System.getProperty("certfile");
-        final String keyFile  = System.getProperty("keyfile");
+        final String certFile = System.getProperty(CERTFILE_PROP);
+        final String keyFile  = System.getProperty(KEYFILE_PROP);
 
         if (certFile == null && keyFile == null) {
             return Optional.empty();
@@ -53,7 +59,7 @@ public class Main {
 
         final KeyStore ks = buildKeyStore(privateKey, certChain);
 
-        final String caFile = System.getProperty("cafile");
+        final String caFile = System.getProperty(CAFILE_PROP);
         if (caFile != null) {
             final var cacertChain = readCertChainFromFile(new File(caFile));
             for (int i = 0; i < cacertChain.length; i++) {

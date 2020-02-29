@@ -44,6 +44,7 @@ public class MqttServer {
             thread.setDaemon(false);
             thread.start();
         }
+        LOGGER.info("Started Muqtti on port " + port);
     }
 
     class EventLoop implements Runnable {
