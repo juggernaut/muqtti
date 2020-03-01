@@ -33,20 +33,21 @@ Use cases
 Getting Started
 ---
 
-You'll need at least [Java 11](https://openjdk.java.net/projects/jdk/11/) to run Muqtti.
+You'll need at least [Java 11](https://openjdk.java.net/projects/jdk/11/) to run Muqtti. The easiest way to get started is to download the [latest release](https://github.com/juggernaut/muqtti/releases/tag/v1.0.0) jar and run it:
 
 ```
-mvn install
+java -jar muqtti-1.0.0.jar
 ```
 
+Muqtti is a standard maven project, so you can also build from source using:
 ```
-java -jar muqtti.jar
+mvn -B package
 ```
 
 Usage
 ---
 
-You can use pub/sub commands bundled with [mosquitto](https://mosquitto.org) as clients to Muqtti.
+Once you have Muqtti running, you can use pub/sub commands bundled with [mosquitto](https://mosquitto.org) as clients to Muqtti.
 
 To subscribe:
 ```
