@@ -110,6 +110,8 @@ I've written my fair share of networked services professionally. However, all my
 like the excellent [Netty Project](https://netty.io/). My goal was to create a project using only the standard JDK so I could delve into lower
 level aspects like protocol encoding/decoding using `ByteBuffer`s and asynchronous I/O using `Selector`s.
 
+It also demonstrates the power of the Java platform and shows its relevance even when it is losing popularity among the trendier tech demographics. This is not to say that the platform doesn't have its rough edges (hello, `SSLEngine`), but overall, it provides a solid base for  programmers to build software of moderate-to-high complexity without having to tear their hair out. 
+
 Scale-out MQTT v5.0 broker
 ---
 
