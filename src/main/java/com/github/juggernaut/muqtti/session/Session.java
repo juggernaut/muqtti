@@ -16,6 +16,7 @@ public interface Session {
     enum DisconnectCause {
         NORMAL_CLIENT_INITIATED,
         ABNORMAL_CLIENT_INITIATED,
+        CLIENT_INTIATED_WITH_WILL_MESSAGE,
         SERVER_INITIATED,
         UNCEREMONIOUS,
         KEEP_ALIVE_TIMED_OUT

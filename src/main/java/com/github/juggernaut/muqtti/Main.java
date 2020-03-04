@@ -31,8 +31,8 @@ public class Main {
     public static void main(String[] args) throws Exception {
         final int port = Integer.getInteger(PORT_PROP, 1883);
         final Optional<Supplier<SSLEngine>> sslContext = getSSLEngineSupplier();
-        final var forkJoinPool = Executors.newWorkStealingPool();
-        final var actorSystem = new ActorSystem(forkJoinPool);
+        final var actorSystem = new ActorSystem(Runtime.getRuntime().availableProcessors());
+        actorSystem.start();
         final var subscriptionManager = new SubscriptionManager();
         final var sessionManager = new SessionManager(subscriptionManager);
         final var mqttServer = new MqttServer(new MqttChannelFactory(actorSystem, sessionManager, sslContext), port);
