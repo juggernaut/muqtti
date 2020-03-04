@@ -25,6 +25,7 @@ public class Disconnect extends MqttPacket {
     public enum ReasonCode {
         // TODO: all reason codes in Table 3‑10
         NORMAL_DISCONNECTION(0x0),
+        DISCONNECT_WITH_WILL_MESSAGE(0x04),
         SESSION_TAKEN_OVER(0x8E),
         QOS_NOT_SUPPORTED(0x9B),
         MALFORMED_ERROR(0x81),
@@ -93,5 +94,9 @@ public class Disconnect extends MqttPacket {
     @Override
     protected ByteBuffer encodePayload() {
         return null;
+    }
+
+    public ReasonCode getReasonCode() {
+        return reasonCode;
     }
 }
