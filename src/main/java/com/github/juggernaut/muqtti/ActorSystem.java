@@ -4,10 +4,11 @@ import com.github.juggernaut.muqtti.fsm.ActorStateMachine;
 import com.github.juggernaut.muqtti.fsm.StateMachine;
 import com.github.juggernaut.muqtti.fsm.events.Event;
 
+import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A bare-bones implementation of an actor system
@@ -18,10 +19,27 @@ public class ActorSystem {
 
     // Map associating an actor id to the actor object
     private final ConcurrentMap<String, Actor> actorMap = new ConcurrentHashMap<>();
-    private final ExecutorService executorService;
+    private final Thread[] executors;
+    private final BlockingQueue<Runnable>[] taskQueues;
+    private final int numProcessors;
 
-    public ActorSystem(ExecutorService executorService) {
-        this.executorService = executorService;
+    private static final Logger LOGGER = Logger.getLogger(ActorSystem.class.getName());
+
+    public ActorSystem(int numProcessors) {
+        this.numProcessors = numProcessors;
+        taskQueues = new BlockingQueue[numProcessors];
+        executors = new Thread[numProcessors];
+        for (int i = 0; i < numProcessors; i++) {
+            // TODO: bounded-capacity queues
+            taskQueues[i] = new LinkedBlockingQueue<>();
+            executors[i] = new Thread(new TaskDequeuer(taskQueues[i]));
+        }
+    }
+
+    public void start() {
+        for (Thread executor : executors) {
+            executor.start();
+        }
     }
 
     /**
@@ -62,16 +80,28 @@ public class ActorSystem {
 
         @Override
         public void sendMessage(Event event) {
-            // NOTE: this assumes that the queue backing the executor service is large enough...
-            executorService.submit(() -> {
-                synchronized(this) {
-                    try {
-                        stateMachine.onEvent(event);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+            // TODO: find optimal hash function
+            final int queueIdx = Math.abs(hashCode() % numProcessors);
+            taskQueues[queueIdx].offer(() -> {
+                try {
+                    stateMachine.onEvent(event);
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "State machine action threw exception", e);
                 }
             });
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            DefaultActor that = (DefaultActor) o;
+            return id.equals(that.id);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id);
         }
 
         @Override
@@ -80,6 +110,29 @@ public class ActorSystem {
                 stateMachine.shutDown();
             } finally {
                 actorMap.remove(id);
+            }
+        }
+    }
+
+    private static class TaskDequeuer implements Runnable {
+
+        private final BlockingQueue<Runnable> taskQueue;
+
+        public TaskDequeuer(BlockingQueue<Runnable> taskQueue) {
+            this.taskQueue = taskQueue;
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    final Runnable task = taskQueue.poll();
+                    if (task != null) {
+                        task.run();
+                    }
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Exception during actor task execution", e);
+                }
             }
         }
     }
