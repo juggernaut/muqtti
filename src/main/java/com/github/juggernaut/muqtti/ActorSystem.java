@@ -126,10 +126,8 @@ public class ActorSystem {
         public void run() {
             while (true) {
                 try {
-                    final Runnable task = taskQueue.poll();
-                    if (task != null) {
-                        task.run();
-                    }
+                    final Runnable task = taskQueue.take();
+                    task.run();
                 } catch (Exception e) {
                     LOGGER.log(Level.WARNING, "Exception during actor task execution", e);
                 }
